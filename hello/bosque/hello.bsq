@@ -1,0 +1,5 @@
+namespace Main;
+
+public function main(): String {
+    return "Hello from Bosque!";
+}

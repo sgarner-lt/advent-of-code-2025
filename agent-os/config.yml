@@ -9,5 +9,5 @@ last_compiled: 2025-12-03 05:28:14
 profile: advent-of-code-2025
 claude_code_commands: true
 use_claude_code_subagents: true
-agent_os_commands: false
+agent_os_commands: true
 standards_as_claude_code_skills: false

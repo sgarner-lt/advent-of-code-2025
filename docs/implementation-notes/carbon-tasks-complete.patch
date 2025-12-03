@@ -1,0 +1,46 @@
+--- a/agent-os/specs/2025-12-03-language-toolchain-setup/tasks.md
++++ b/agent-os/specs/2025-12-03-language-toolchain-setup/tasks.md
+@@ -179,17 +179,17 @@
+ #### Task Group 5: Carbon Toolchain Setup
+ **Dependencies:** Task Group 1
+
+-- [ ] 5.0 Complete Carbon toolchain installation and verification
+-  - [ ] 5.1 Create Carbon installation script (`scripts/install_carbon.sh`)
++- [x] 5.0 Complete Carbon toolchain installation and verification
++  - [x] 5.1 Create Carbon installation script (`scripts/install_carbon.sh`)
+     - Source `scripts/common.sh` for utilities
+     - Check if Carbon already installed (idempotency)
+-    - Clone official Carbon language repository to `/tmp/carbon-build/`
++    - Clone official Carbon language repository to `~/.local/carbon/carbon-lang`
+     - Build from source following official installation instructions
+     - Install required dependencies (LLVM, Clang, Bazel, etc.)
+     - Install binary to appropriate location
+     - Verify installation with version or help command
+     - Clean up temporary build directory
+     - Exit with clear error codes and messages on failure
+     - Document build process thoroughly for troubleshooting
+-  - [ ] 5.2 Create Carbon hello world program
++  - [x] 5.2 Create Carbon hello world program
+     - Create `hello/carbon/hello.carbon` with simple hello world
+@@ -197,12 +197,12 @@
+     - Use idiomatic Carbon syntax
+-  - [ ] 5.3 Verify Carbon build tools
++  - [x] 5.3 Verify Carbon build tools
+     - Compile hello world using Carbon toolchain
+     - Run compiled program and verify output
+     - Test basic Carbon CLI functionality
+     - Document any experimental limitations encountered
+-  - [ ] 5.4 Create Carbon documentation (`docs/languages/carbon.md`)
++  - [x] 5.4 Create Carbon documentation (`docs/languages/carbon.md`)
+     - Document source build installation steps in detail
+     - Explain Carbon toolchain basics (compile, run)
+     - Include troubleshooting section with known issues for experimental language
+@@ -210,7 +210,7 @@
+     - Note that Carbon is experimental and pre-1.0
+     - Include links to official Carbon documentation and community resources
+     - Note macOS-only limitation
+-  - [ ] 5.5 Troubleshoot Carbon installation exhaustively
++  - [x] 5.5 Troubleshoot Carbon installation exhaustively
+     - If installation fails, research and document common issues
+     - Try alternative installation methods or build configurations
+     - Check for macOS-specific compatibility issues
