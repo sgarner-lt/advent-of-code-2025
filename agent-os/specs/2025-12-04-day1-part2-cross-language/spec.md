@@ -43,7 +43,7 @@ Implement Advent of Code Day 1 Part 2 solution across all 5 languages (Bosque, C
 - All 5 implementations must use equivalent algorithm logic even when language idioms differ
 - Sample input must produce `{"part1": 3, "part2": 6}` in all languages
 - Real puzzle input must produce identical numerical results across all languages
-- Part 1 answers must remain unchanged from previous implementation (1097 for real input)
+- Part 1 answers must remain unchanged from previous implementation (REDACTED for real input)
 
 **Edge Case Handling**
 - Starting at position 0: determine whether to count as initial crossing or not
@@ -56,7 +56,7 @@ Implement Advent of Code Day 1 Part 2 solution across all 5 languages (Bosque, C
 - Add unit tests for `count_zero_crossings` function with simple, crossing, and large rotation cases
 - Validate sample input produces expected Part 2 answer of 6
 - Verify Part 1 answer remains unchanged at 3 for sample input
-- Test against real puzzle input and verify Part 1 answer unchanged at 1097
+- Test against real puzzle input and verify Part 1 answer unchanged at REDACTED
 - Run cross-language validation comparing all 5 implementations on both sample and real inputs
 
 **JSON Output Format**

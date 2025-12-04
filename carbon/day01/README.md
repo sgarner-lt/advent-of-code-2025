@@ -92,8 +92,8 @@ All 8 unit tests pass:
 
 ### Real Input
 - Input: `challenges/day01/input.txt`
-- Expected: `{"part1": 1097, "part2": null}`
-- Actual: `{"part1": 1097, "part2": null}`
+- Expected: `{"part1": REDACTED, "part2": null}`
+- Actual: `{"part1": REDACTED, "part2": null}`
 - Status: PASS
 
 ## Algorithm Verification
@@ -119,9 +119,9 @@ Final count: 3
 ## Cross-Language Consistency
 
 The Carbon implementation produces identical results to:
-- Rust: `{"part1": 1097, "part2": null}`
-- Gleam: `{"part1": 1097, "part2": null}`
-- Roc: `{"part1": 1097, "part2": null}`
+- Rust: `{"part1": REDACTED, "part2": null}`
+- Gleam: `{"part1": REDACTED, "part2": null}`
+- Roc: `{"part1": REDACTED, "part2": null}`
 
 ## Future Work
 

@@ -7,7 +7,7 @@ Successfully implemented Part 2 for Advent of Code Day 1 in Rust, counting zero 
 ## Results
 
 - **Sample Input**: `{"part1": 3, "part2": 6}` (Expected and achieved)
-- **Real Input**: `{"part1": 1097, "part2": 7101}` (Part 1 unchanged from original implementation)
+- **Real Input**: `{"part1": REDACTED, "part2": REDACTED}` (Part 1 unchanged from original implementation)
 
 ## Implementation Details
 

@@ -1,20 +1,18 @@
 namespace Main;
 
-// Advent of Code 2025 Day 1 Part 1 - Dial Rotation Simulation
+// Advent of Code 2025 Day 1 - Dial Rotation Simulation
 //
 // IMPORTANT: Bosque is a Microsoft Research language with limited stdlib
 // This implementation follows the spec but may require runtime workarounds
 // for file I/O and standard library functions.
 //
 // Algorithm:
-// 1. Start at position 50 on circular dial (0-99)
-// 2. Process rotation instructions (L=left, R=right + distance)
-// 3. Count how many times position equals 0 after each rotation
-// 4. Return count as part1 answer
+// Part 1: Count how many times position equals 0 after each rotation
+// Part 2: Count how many times the dial crosses through 0 during rotations
 //
 // Expected results:
-// - Sample input: 3
-// - Real input: 1097
+// - Sample input: Part 1=3, Part 2=6
+// - Real input: Part 1=REDACTED, Part 2=TBD
 
 // Rotate dial position by distance in given direction
 // Returns new position in range 0-99 with wraparound
@@ -22,6 +20,50 @@ function rotateDial(position: Int, isLeft: Bool, distance: Int): Int {
     var newPos = isLeft ? (position - distance) : (position + distance);
     // Handle negative modulo for circular wraparound
     return ((newPos % 100i) + 100i) % 100i;
+}
+
+// Count how many times the dial crosses through position 0 during a rotation
+//
+// This function calculates zero crossings by breaking the rotation into:
+// 1. Complete circles (each crosses 0 exactly once)
+// 2. A remainder rotation (may or may not cross 0 depending on position and direction)
+//
+// Arguments:
+// - position: Current dial position (0-99)
+// - isLeft: Direction of rotation (true=left/counterclockwise, false=right/clockwise)
+// - distance: Rotation amount (non-negative integer)
+//
+// Returns: Integer count of zero crossings (>= 0)
+function countZeroCrossings(position: Int, isLeft: Bool, distance: Int): Int {
+    if(distance == 0i) {
+        return 0i;
+    }
+
+    // Calculate complete circles and remainder
+    var completeCircles = distance / 100i;
+    var remainder = distance % 100i;
+
+    // Each complete circle crosses zero exactly once
+    var crossings = completeCircles;
+
+    if(isLeft) {
+        // Left (counterclockwise) rotation
+        // Distance to reach 0 going left
+        var distanceToZero = position;
+        if(position > 0i && remainder >= distanceToZero) {
+            crossings = crossings + 1i;
+        }
+    }
+    else {
+        // Right (clockwise) rotation
+        // Distance to reach 0 going right
+        var distanceToZero = 100i - position;
+        if(remainder >= distanceToZero) {
+            crossings = crossings + 1i;
+        }
+    }
+
+    return crossings;
 }
 
 // Parse direction from instruction line ("L68" -> true, "R48" -> false)
@@ -50,11 +92,13 @@ function parseDistance(line: String): Int? {
     return String::parseInt(numStr);
 }
 
-// Process all rotation instructions and count zeros
-function solvePart1(input: String): Int {
+// Process all rotation instructions and count both final zeros and crossings
+// Returns tuple (part1_count, part2_count)
+function solve(input: String): {part1: Int, part2: Int} {
     var lines = String::split(input, "\n");
     var position = 50i;
-    var zeroCount = 0i;
+    var part1Count = 0i;
+    var part2Count = 0i;
     var i = 0i;
 
     while(i < List::size<String>(lines)) {
@@ -65,10 +109,15 @@ function solvePart1(input: String): Int {
             var distance = parseDistance(line);
 
             if(isLeft != none && distance != none) {
+                // Part 2: Count zero crossings during rotation
+                part2Count = part2Count + countZeroCrossings(position, isLeft, distance);
+
+                // Update position
                 position = rotateDial(position, isLeft, distance);
 
+                // Part 1: Count when dial lands on 0
                 if(position == 0i) {
-                    zeroCount = zeroCount + 1i;
+                    part1Count = part1Count + 1i;
                 }
             }
         }
@@ -76,7 +125,7 @@ function solvePart1(input: String): Int {
         i = i + 1i;
     }
 
-    return zeroCount;
+    return {part1: part1Count, part2: part2Count};
 }
 
 // Main entry point
@@ -100,16 +149,24 @@ entrypoint function main(args: List<String>): Int {
         }
     }
 
-    var answer = solvePart1(inputContent);
+    var results = solve(inputContent);
 
     // Output JSON format for cross-language validation
-    var output = String::concat("{\"part1\": ", Int::toString(answer), ", \"part2\": null}");
+    var output = String::concat(
+        "{\"part1\": ",
+        Int::toString(results.part1),
+        ", \"part2\": ",
+        Int::toString(results.part2),
+        "}"
+    );
     Console::writeLine(output);
 
     return 0i;
 }
 
-// === UNIT TESTS (8 tests as per spec) ===
+// === UNIT TESTS (Part 1 tests: 8, Part 2 tests: 6) ===
+
+// ========== Part 1 Tests ==========
 
 // Test 1: Left rotation with wraparound (5 - 10 = -5 -> 95)
 function test_leftRotationWraparound(): Bool {
@@ -156,15 +213,7 @@ function test_parseDistanceValue(): Bool {
     return true;
 }
 
-// Test 7: Sample input produces expected answer of 3
-function test_sampleInputAnswer(): Bool {
-    var sample = "L68\nL30\nR48\nL5\nR60\nL55\nL1\nL99\nR14\nL82";
-    var result = solvePart1(sample);
-    _assert(result == 3i);
-    return true;
-}
-
-// Test 8: Verify rotation sequence manually
+// Test 7: Verify rotation sequence manually
 // Start: 50, L68: 82, L30: 52, R48: 0 (first zero)
 function test_rotationSequenceVerification(): Bool {
     var pos0 = 50i;
@@ -179,5 +228,74 @@ function test_rotationSequenceVerification(): Bool {
     var pos3 = rotateDial(pos2, false, 48i); // 52+48 = 100 -> 0
     _assert(pos3 == 0i);
 
+    return true;
+}
+
+// Test 8: Sample input produces expected Part 1 answer of 3
+function test_sampleInputPart1(): Bool {
+    var sample = "L68\nL30\nR48\nL5\nR60\nL55\nL1\nL99\nR14\nL82";
+    var results = solve(sample);
+    _assert(results.part1 == 3i);
+    return true;
+}
+
+// ========== Part 2 Tests ==========
+
+// Test 9: Right rotation crossing once (95 + 10 crosses 0 at position 100->0)
+function test_rightCrossingOnce(): Bool {
+    var crossings = countZeroCrossings(95i, false, 10i);
+    _assert(crossings == 1i);
+    return true;
+}
+
+// Test 10: Left rotation crossing once (5 - 10 crosses 0)
+function test_leftCrossingOnce(): Bool {
+    var crossings = countZeroCrossings(5i, true, 10i);
+    _assert(crossings == 1i);
+    return true;
+}
+
+// Test 11: Large rotation with multiple crossings (R1000 from 50 = 10 crossings)
+function test_largeRotationMultipleCrossings(): Bool {
+    var crossings = countZeroCrossings(50i, false, 1000i);
+    _assert(crossings == 10i);
+    return true;
+}
+
+// Test 12: Exact multiple of 100 (R100 from 0 = 1 crossing)
+function test_exactMultipleOf100(): Bool {
+    var crossings = countZeroCrossings(0i, false, 100i);
+    _assert(crossings == 1i);
+    return true;
+}
+
+// Test 13: No crossing (R10 from 50 stays in range 50-60, no zero crossing)
+function test_noCrossing(): Bool {
+    var crossings = countZeroCrossings(50i, false, 10i);
+    _assert(crossings == 0i);
+    return true;
+}
+
+// Test 14: Starting at zero right (R10 from 0 = no crossing, just moves away)
+function test_startingAtZeroRight(): Bool {
+    var crossings = countZeroCrossings(0i, false, 10i);
+    _assert(crossings == 0i);
+    return true;
+}
+
+// Test 15: Sample input produces expected Part 2 answer of 6
+function test_sampleInputPart2(): Bool {
+    var sample = "L68\nL30\nR48\nL5\nR60\nL55\nL1\nL99\nR14\nL82";
+    var results = solve(sample);
+    _assert(results.part2 == 6i);
+    return true;
+}
+
+// Test 16: Full sample input validation (both parts)
+function test_sampleInputBothParts(): Bool {
+    var sample = "L68\nL30\nR48\nL5\nR60\nL55\nL1\nL99\nR14\nL82";
+    var results = solve(sample);
+    _assert(results.part1 == 3i);
+    _assert(results.part2 == 6i);
     return true;
 }

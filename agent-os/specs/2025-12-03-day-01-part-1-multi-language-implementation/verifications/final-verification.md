@@ -124,15 +124,15 @@ Successfully marked as complete in `agent-os/product/roadmap.md`. Next item (Day
 | Bosque | ✅ Pass | `{"part1": 3, "part2": null}` | Python wrapper execution |
 
 #### Real Input (input.txt)
-**Expected Output:** `{"part1": 1097, "part2": null}`
+**Expected Output:** `{"part1": REDACTED, "part2": null}`
 
 | Language | Status | Output | Notes |
 |----------|--------|--------|-------|
-| Rust | ✅ Pass | `{"part1": 1097, "part2": null}` | Clean execution |
+| Rust | ✅ Pass | `{"part1": REDACTED, "part2": null}` | Clean execution |
 | Gleam | ⚠️ Skip | N/A | Project structure issue |
-| Roc | ✅ Pass | `{"part1": 1097, "part2": null}` | Runs via Podman container |
-| Carbon | ✅ Pass | `{"part1": 1097, "part2": null}` | Python wrapper execution |
-| Bosque | ✅ Pass | `{"part1": 1097, "part2": null}` | Python wrapper execution |
+| Roc | ✅ Pass | `{"part1": REDACTED, "part2": null}` | Runs via Podman container |
+| Carbon | ✅ Pass | `{"part1": REDACTED, "part2": null}` | Python wrapper execution |
+| Bosque | ✅ Pass | `{"part1": REDACTED, "part2": null}` | Python wrapper execution |
 
 ### Test Summary
 - **Total Implementations:** 5
@@ -155,7 +155,7 @@ None - all tested implementations passing.
 ### Notes
 - All working implementations produce identical results across both inputs
 - Sample input answer: 3 (dial lands on 0 three times)
-- Real input answer: 1097 (ready for Advent of Code submission)
+- Real input answer: REDACTED (ready for Advent of Code submission)
 - Roc implementation requires Podman container but executes successfully
 - Carbon and Bosque implementations use Python wrappers due to language limitations
 - No regressions detected in any implementation
@@ -191,7 +191,7 @@ Manual trace confirms expected behavior:
 ### Cross-Language Consistency
 - 4 of 5 languages tested: 100% agreement
 - All produce identical sample answer: 3
-- All produce identical real answer: 1097
+- All produce identical real answer: REDACTED
 - JSON output format consistent across all implementations
 
 ---
@@ -280,7 +280,7 @@ None.
 - ✅ All 5 language implementations exist and compile
 - ✅ All unit tests pass (32 tests total: Rust ~8, Gleam 8, Roc 8, Carbon ~8, Bosque 8)
 - ✅ All implementations output answer 3 for sample input (4/4 tested)
-- ✅ All implementations agree on answer for real input: 1097 (4/4 tested)
+- ✅ All implementations agree on answer for real input: REDACTED (4/4 tested)
 - ✅ Cross-language validation reports 100% consistency among tested implementations
 - ⏳ Answer ready for Advent of Code submission: YES
 
@@ -393,19 +393,19 @@ The Gleam structural issue is a minor infrastructure problem that does not affec
 ```bash
 # Rust (PASS)
 ./scripts/runners/run_rust.sh 1 /Users/sgarner/projects/sgarner-lt/advent-of-code-2025/challenges/day01/input.txt
-# Output: {"part1": 1097, "part2": null}
+# Output: {"part1": REDACTED, "part2": null}
 
 # Roc (PASS)
 ./scripts/runners/run_roc.sh 1 /Users/sgarner/projects/sgarner-lt/advent-of-code-2025/challenges/day01/input.txt
-# Output: {"part1": 1097, "part2": null}
+# Output: {"part1": REDACTED, "part2": null}
 
 # Carbon (PASS)
 ./scripts/runners/run_carbon.sh 1 /Users/sgarner/projects/sgarner-lt/advent-of-code-2025/challenges/day01/input.txt
-# Output: {"part1": 1097, "part2": null}
+# Output: {"part1": REDACTED, "part2": null}
 
 # Bosque (PASS)
 ./scripts/runners/run_bosque.sh 1 /Users/sgarner/projects/sgarner-lt/advent-of-code-2025/challenges/day01/input.txt
-# Output: {"part1": 1097, "part2": null}
+# Output: {"part1": REDACTED, "part2": null}
 ```
 
 ---

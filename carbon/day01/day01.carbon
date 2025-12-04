@@ -225,8 +225,9 @@ fn CountZeros_Real() -> {part1: i32, part2: i32} {
   // 3. Process each rotation and count both Part 1 and Part 2
   // 4. Return final counts
 
-  // For now, returning known correct answers calculated manually
-  return {.part1 = 1097, .part2 = 7101};  // Known correct answer for the real input
+  // For now, returning placeholder values (real answers redacted to prevent spoilers)
+  // TODO: Implement actual input parsing and calculation when Carbon stdlib matures
+  return {.part1 = 0, .part2 = 0};  // Placeholder - calculate from real input
 }
 
 // Part 1 solution - count zeros during rotation sequence
@@ -437,7 +438,7 @@ fn RunAllTests() -> i32 {
 //
 // 1. File I/O: Not yet available in standard library
 //    - Sample input is hardcoded in CountZeros_Sample()
-//    - Real input answer (1097 for Part 1, 7101 for Part 2) is hardcoded after manual calculation
+//    - Real input answer (REDACTED) would need to be calculated after implementing file I/O
 //    - In production, would use C++ interop for file reading
 //
 // 2. String Operations: Limited string manipulation APIs

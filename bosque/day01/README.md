@@ -12,7 +12,7 @@ The Bosque implementation in `solution.bsq` is algorithmically correct and follo
 
 ### Expected Results
 - Sample input (`input-sample.txt`): 3
-- Real input (`input.txt`): 1097
+- Real input (`input.txt`): REDACTED
 
 ### Bosque Runtime Limitations
 
@@ -85,7 +85,7 @@ To run the Bosque implementation:
 2. Ensure BosqueCore can load source files
 3. Test with: `./scripts/runners/run_bosque.sh 1 challenges/day01/input-sample.txt`
 4. Verify output: `{"part1": 3, "part2": null}`
-5. Run with real input and verify: `{"part1": 1097, "part2": null}`
+5. Run with real input and verify: `{"part1": REDACTED, "part2": null}`
 
 ### Verification
 
@@ -115,7 +115,7 @@ Final count: 3 ✓
 
 ### Cross-Language Consistency
 Once runtime is configured, this implementation should produce identical results to:
-- Rust: {"part1": 1097, "part2": null} ✓
-- Gleam: {"part1": 1097, "part2": null} ✓
-- Roc: {"part1": 1097, "part2": null} ✓
-- Carbon: {"part1": 1097, "part2": null} ✓
+- Rust: {"part1": REDACTED, "part2": null} ✓
+- Gleam: {"part1": REDACTED, "part2": null} ✓
+- Roc: {"part1": REDACTED, "part2": null} ✓
+- Carbon: {"part1": REDACTED, "part2": null} ✓

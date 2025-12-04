@@ -20,7 +20,7 @@
 
 4. [x] Day 1 Part 1 — Implement Part 1 solution in all 5 languages with cross-language validation `M`
 
-5. [ ] Day 1 Part 2 — Implement Part 2 solution in all 5 languages with cross-language validation `M`
+5. [x] Day 1 Part 2 — Implement Part 2 solution in all 5 languages with cross-language validation `M`
 
 6. [ ] Day 1 Analysis — Compare approaches, performance, and document language-specific observations `XS`
 

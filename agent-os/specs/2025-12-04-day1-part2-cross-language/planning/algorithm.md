@@ -423,7 +423,7 @@ All five language implementations (Rust, Gleam, Roc, Carbon, Bosque) must:
 
 **Expected Outputs:**
 - Sample input: `{"part1": 3, "part2": 6}`
-- Real input: `{"part1": 1097, "part2": <TBD>}` (all languages must agree)
+- Real input: `{"part1": REDACTED, "part2": <TBD>}` (all languages must agree)
 
 ## Summary
 

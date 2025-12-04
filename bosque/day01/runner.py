@@ -36,6 +36,49 @@ def rotate_dial(position, is_left, distance):
     return ((new_pos % 100) + 100) % 100
 
 
+def count_zero_crossings(position, is_left, distance):
+    """
+    Count how many times the dial crosses through position 0 during a rotation
+
+    This function calculates zero crossings by breaking the rotation into:
+    1. Complete circles (each crosses 0 exactly once)
+    2. A remainder rotation (may or may not cross 0 depending on position and direction)
+
+    Arguments:
+    - position: Current dial position (0-99)
+    - is_left: Direction of rotation (True=left/counterclockwise, False=right/clockwise)
+    - distance: Rotation amount (non-negative integer)
+
+    Returns: Integer count of zero crossings (>= 0)
+
+    Mirrors: function countZeroCrossings(position: Int, isLeft: Bool, distance: Int): Int
+    """
+    if distance == 0:
+        return 0
+
+    # Calculate complete circles and remainder
+    complete_circles = distance // 100
+    remainder = distance % 100
+
+    # Each complete circle crosses zero exactly once
+    crossings = complete_circles
+
+    if is_left:
+        # Left (counterclockwise) rotation
+        # Distance to reach 0 going left
+        distance_to_zero = position
+        if position > 0 and remainder >= distance_to_zero:
+            crossings += 1
+    else:
+        # Right (clockwise) rotation
+        # Distance to reach 0 going right
+        distance_to_zero = 100 - position
+        if remainder >= distance_to_zero:
+            crossings += 1
+
+    return crossings
+
+
 def parse_is_left(line):
     """
     Parse direction from instruction line ("L68" -> True, "R48" -> False)
@@ -69,15 +112,17 @@ def parse_distance(line):
         return None
 
 
-def solve_part1(input_text):
+def solve(input_text):
     """
-    Process all rotation instructions and count zeros
+    Process all rotation instructions and count both final zeros and crossings
+    Returns tuple (part1_count, part2_count)
 
-    Mirrors: function solvePart1(input: String): Int
+    Mirrors: function solve(input: String): {part1: Int, part2: Int}
     """
     lines = input_text.split('\n')
     position = 50
-    zero_count = 0
+    part1_count = 0
+    part2_count = 0
 
     for line in lines:
         line = line.strip()
@@ -87,12 +132,17 @@ def solve_part1(input_text):
             distance = parse_distance(line)
 
             if is_left is not None and distance is not None:
+                # Part 2: Count zero crossings during rotation
+                part2_count += count_zero_crossings(position, is_left, distance)
+
+                # Update position
                 position = rotate_dial(position, is_left, distance)
 
+                # Part 1: Count when dial lands on 0
                 if position == 0:
-                    zero_count += 1
+                    part1_count += 1
 
-    return zero_count
+    return (part1_count, part2_count)
 
 
 def main():
@@ -107,10 +157,10 @@ def main():
         with open(input_path, 'r') as f:
             input_text = f.read()
 
-        answer = solve_part1(input_text)
+        part1_answer, part2_answer = solve(input_text)
 
         # Output JSON format matching other languages
-        output = {"part1": answer, "part2": None}
+        output = {"part1": part1_answer, "part2": part2_answer}
         print(json.dumps(output))
 
     except FileNotFoundError:

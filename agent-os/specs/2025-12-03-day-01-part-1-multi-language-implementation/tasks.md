@@ -320,7 +320,7 @@ This spec implements the Advent of Code 2025 Day 1 Part 1 solution across all 5 
     - Parse JSON output from each
     - Verify all 5 languages produce identical answer
     - Document the final answer
-    - **VERIFIED**: Rust, Roc, Carbon, Bosque all output {"part1": 1097, "part2": null}
+    - **VERIFIED**: Rust, Roc, Carbon, Bosque all output {"part1": REDACTED, "part2": null}
   - [x] 7.5 Run cross-language validation on real input
     - Use validation script with real input
     - Confirm 100% agreement across all languages
