@@ -1,0 +1,29 @@
+task_groups:
+  - name: Manual Checklist Creation
+    claude_code_subagent: implementer
+    standards:
+      - all
+  - name: Rust Project Setup Documentation
+    claude_code_subagent: implementer
+    standards:
+      - all
+  - name: Gleam Project Setup Documentation
+    claude_code_subagent: implementer
+    standards:
+      - all
+  - name: Roc Project Setup Documentation
+    claude_code_subagent: implementer
+    standards:
+      - all
+  - name: Carbon Project Setup Documentation
+    claude_code_subagent: implementer
+    standards:
+      - all
+  - name: Bosque Project Setup Documentation
+    claude_code_subagent: implementer
+    standards:
+      - all
+  - name: Challenges Directory Setup Documentation
+    claude_code_subagent: implementer
+    standards:
+      - all
