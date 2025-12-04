@@ -12,9 +12,9 @@ main! = \args ->
         Err _ -> "../../challenges/day01/input.txt"
 
     input = read_input! input_path
-    part1_result = part1 input
+    result = process_rotations input
 
-    Stdout.line! "{\"part1\": $(Num.to_str part1_result), \"part2\": null}"
+    Stdout.line! "{\"part1\": $(Num.to_str result.part1), \"part2\": $(Num.to_str result.part2)}"
 
 read_input! : Str => Str
 read_input! = \path ->
@@ -53,29 +53,70 @@ rotate = \position, instruction ->
         Right ->
             (position + instruction.distance) % 100
 
-process_rotations : Str -> I32
+## Counts how many times the dial crosses through position 0 during a rotation.
+##
+## This function calculates zero crossings by breaking the rotation into:
+## 1. Complete circles (each crosses 0 exactly once)
+## 2. A remainder rotation (may or may not cross 0 depending on position and direction)
+countZeroCrossings : I32, Instruction -> I32
+countZeroCrossings = \position, instruction ->
+    amount = instruction.distance
+
+    if amount == 0 then
+        0
+    else
+        # Calculate complete circles and remainder
+        complete_circles = amount // 100
+        remainder = amount % 100
+
+        # Each complete circle crosses zero exactly once
+        crossings_from_circles = complete_circles
+
+        # Check if remainder rotation crosses zero
+        crossings_from_remainder = when instruction.direction is
+            Right ->
+                # Distance to reach 0 going right (clockwise)
+                distance_to_zero = 100 - position
+                if remainder >= distance_to_zero then
+                    1
+                else
+                    0
+            Left ->
+                # Distance to reach 0 going left (counterclockwise)
+                distance_to_zero = position
+                if position > 0 && remainder >= distance_to_zero then
+                    1
+                else
+                    0
+
+        crossings_from_circles + crossings_from_remainder
+
+process_rotations : Str -> { part1 : I32, part2 : I32 }
 process_rotations = \input ->
     lines = Str.split_on input "\n"
         |> List.map Str.trim
         |> List.drop_if \line -> Str.is_empty line
 
-    initial_state = { position: 50, count: 0 }
+    initial_state = { position: 50, part1: 0, part2: 0 }
 
     final_state = List.walk lines initial_state \state, line ->
         when parse_instruction line is
             Ok instruction ->
+                # Calculate Part 2: count zero crossings during rotation
+                crossings = countZeroCrossings state.position instruction
+
+                # Update position
                 new_position = rotate state.position instruction
-                new_count = if new_position == 0 then state.count + 1 else state.count
-                { position: new_position, count: new_count }
+
+                # Calculate Part 1: count when dial lands on 0
+                new_part1 = if new_position == 0 then state.part1 + 1 else state.part1
+
+                { position: new_position, part1: new_part1, part2: state.part2 + crossings }
             Err _ -> state
 
-    final_state.count
+    { part1: final_state.part1, part2: final_state.part2 }
 
-part1 : Str -> I32
-part1 = \input ->
-    process_rotations input
-
-# Inline tests for rotation logic
+# Inline tests for rotation logic (Part 1)
 expect
     # Test right rotation without wraparound
     instruction = { direction: Right, distance: 10 }
@@ -117,7 +158,68 @@ expect
     result == 0
 
 expect
-    # Test sample input produces correct count
+    # Test sample input produces correct count for Part 1
     sample_input = "L68\nL30\nR48\nL5\nR60\nL55\nL1\nL99\nR14\nL82\n"
     result = process_rotations sample_input
-    result == 3
+    result.part1 == 3
+
+# Inline tests for countZeroCrossings function (Part 2)
+expect
+    # Test no crossing: R10 from position 50
+    instruction = { direction: Right, distance: 10 }
+    crossings = countZeroCrossings 50 instruction
+    crossings == 0
+
+expect
+    # Test simple right crossing: R10 from position 95
+    instruction = { direction: Right, distance: 10 }
+    crossings = countZeroCrossings 95 instruction
+    crossings == 1
+
+expect
+    # Test simple left crossing: L10 from position 5
+    instruction = { direction: Left, distance: 10 }
+    crossings = countZeroCrossings 5 instruction
+    crossings == 1
+
+expect
+    # Test large rotation: R1000 from position 50 crosses 10 times
+    instruction = { direction: Right, distance: 1000 }
+    crossings = countZeroCrossings 50 instruction
+    crossings == 10
+
+expect
+    # Test exact multiple: R100 from position 0
+    instruction = { direction: Right, distance: 100 }
+    crossings = countZeroCrossings 0 instruction
+    crossings == 1
+
+expect
+    # Test starting at zero (right): R10 from position 0
+    instruction = { direction: Right, distance: 10 }
+    crossings = countZeroCrossings 0 instruction
+    crossings == 0
+
+expect
+    # Test starting at zero (left): L10 from position 0
+    instruction = { direction: Left, distance: 10 }
+    crossings = countZeroCrossings 0 instruction
+    crossings == 0
+
+expect
+    # Test ending at zero: L10 from position 10
+    instruction = { direction: Left, distance: 10 }
+    crossings = countZeroCrossings 10 instruction
+    crossings == 1
+
+expect
+    # Test sample input produces correct Part 2 answer
+    sample_input = "L68\nL30\nR48\nL5\nR60\nL55\nL1\nL99\nR14\nL82\n"
+    result = process_rotations sample_input
+    result.part2 == 6
+
+expect
+    # Test sample input produces both correct answers
+    sample_input = "L68\nL30\nR48\nL5\nR60\nL55\nL1\nL99\nR14\nL82\n"
+    result = process_rotations sample_input
+    result.part1 == 3 && result.part2 == 6

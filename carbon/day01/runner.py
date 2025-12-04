@@ -49,20 +49,73 @@ def rotate_dial(position, direction, distance):
     return new_position
 
 
+def count_zero_crossings(position, direction, distance):
+    """
+    Count how many times the dial crosses through position 0 during a rotation.
+
+    This function calculates zero crossings by breaking the rotation into:
+    1. Complete circles (each crosses 0 exactly once)
+    2. A remainder rotation (may or may not cross 0 depending on position and direction)
+
+    Arguments:
+        position: Current dial position (0-99)
+        direction: Rotation direction ('L' or 'R')
+        distance: Rotation amount (non-negative integer)
+
+    Returns:
+        Integer count of zero crossings (>= 0)
+    """
+    if distance == 0:
+        return 0
+
+    # Calculate complete circles and remainder
+    complete_circles = distance // 100
+    remainder = distance % 100
+
+    # Each complete circle crosses zero exactly once
+    crossings = complete_circles
+
+    # Check if remainder rotation crosses zero based on direction
+    if direction == 'R':
+        # Distance to reach 0 going right (clockwise)
+        distance_to_zero = 100 - position
+        if remainder >= distance_to_zero:
+            crossings += 1
+    else:  # direction == 'L'
+        # Distance to reach 0 going left (counterclockwise)
+        distance_to_zero = position
+        if position > 0 and remainder >= distance_to_zero:
+            crossings += 1
+
+    return crossings
+
+
 def count_zeros(input_text):
-    """Count how many times the dial lands on 0"""
+    """
+    Count how many times the dial lands on 0 (Part 1) and crosses through 0 (Part 2)
+
+    Returns tuple: (part1_count, part2_count)
+    """
     position = 50  # Starting position
-    zero_count = 0
+    part1_count = 0
+    part2_count = 0
 
     for line in input_text.strip().split('\n'):
         rotation = parse_rotation(line)
         if rotation:
             direction, distance = rotation
-            position = rotate_dial(position, direction, distance)
-            if position == 0:
-                zero_count += 1
 
-    return zero_count
+            # Calculate Part 2: count zero crossings during rotation
+            part2_count += count_zero_crossings(position, direction, distance)
+
+            # Update position
+            position = rotate_dial(position, direction, distance)
+
+            # Calculate Part 1: count when dial lands on 0
+            if position == 0:
+                part1_count += 1
+
+    return (part1_count, part2_count)
 
 
 def main():
@@ -77,10 +130,10 @@ def main():
         with open(input_path, 'r') as f:
             input_text = f.read()
 
-        part1_result = count_zeros(input_text)
+        part1_result, part2_result = count_zeros(input_text)
 
         # Output JSON format matching other languages
-        output = {"part1": part1_result, "part2": None}
+        output = {"part1": part1_result, "part2": part2_result}
         print(json.dumps(output))
 
     except FileNotFoundError:

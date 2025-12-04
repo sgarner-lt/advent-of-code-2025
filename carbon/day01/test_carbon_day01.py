@@ -6,6 +6,7 @@ Since Carbon doesn't have a mature testing framework yet, these tests
 verify the algorithm logic that is implemented in day01.carbon
 
 All test cases mirror the tests defined in the Carbon code:
+Part 1 tests (8):
 - TestParseDirection_Left
 - TestParseDirection_Right
 - TestLeftRotationWraparound
@@ -14,6 +15,16 @@ All test cases mirror the tests defined in the Carbon code:
 - TestSampleInput
 - TestLeftRotationNoWrap
 - TestRightRotationNoWrap
+
+Part 2 tests (8):
+- TestCountZeroCrossingsSimple_Right
+- TestCountZeroCrossingsSimple_Left
+- TestCountZeroCrossingsLarge
+- TestCountZeroCrossingsExactMultiple
+- TestCountZeroCrossingsNoCrossing
+- TestCountZeroCrossingsStartingAtZero_Right
+- TestCountZeroCrossingsStartingAtZero_Left
+- TestCountZeroCrossingsEndingAtZero
 """
 
 import sys
@@ -21,8 +32,12 @@ import os
 
 # Add parent directory to path to import runner module
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from runner import parse_rotation, rotate_dial, count_zeros
+from runner import parse_rotation, rotate_dial, count_zeros, count_zero_crossings
 
+
+# ============================================================================
+# PART 1 TESTS
+# ============================================================================
 
 def test_parse_left_rotation():
     """Test 1: Parse left rotation instruction"""
@@ -62,8 +77,9 @@ def test_rotation_lands_on_zero():
 def test_sample_input():
     """Test 6: Sample input produces correct answer"""
     sample_input = "L68\nL30\nR48\nL5\nR60\nL55\nL1\nL99\nR14\nL82"
-    result = count_zeros(sample_input)
-    assert result == 3, f"Expected 3, got {result}"
+    part1, part2 = count_zeros(sample_input)
+    assert part1 == 3, f"Expected part1=3, got {part1}"
+    assert part2 == 6, f"Expected part2=6, got {part2}"
     print("✓ Test 6: Sample input produces correct answer - PASSED")
 
 
@@ -81,6 +97,66 @@ def test_right_rotation_no_wrap():
     print("✓ Test 8: Right rotation without wraparound - PASSED")
 
 
+# ============================================================================
+# PART 2 TESTS
+# ============================================================================
+
+def test_count_zero_crossings_simple_right():
+    """Test 9: Right crossing once (simple case)"""
+    crossings = count_zero_crossings(95, 'R', 10)
+    assert crossings == 1, f"Expected 1, got {crossings}"
+    print("✓ Test 9: Right crossing once (simple case) - PASSED")
+
+
+def test_count_zero_crossings_simple_left():
+    """Test 10: Left crossing once (simple case)"""
+    crossings = count_zero_crossings(5, 'L', 10)
+    assert crossings == 1, f"Expected 1, got {crossings}"
+    print("✓ Test 10: Left crossing once (simple case) - PASSED")
+
+
+def test_count_zero_crossings_large():
+    """Test 11: Large rotation - multiple crossings"""
+    crossings = count_zero_crossings(50, 'R', 1000)
+    assert crossings == 10, f"Expected 10, got {crossings}"
+    print("✓ Test 11: Large rotation - multiple crossings - PASSED")
+
+
+def test_count_zero_crossings_exact_multiple():
+    """Test 12: Exact multiple of 100"""
+    crossings = count_zero_crossings(0, 'R', 100)
+    assert crossings == 1, f"Expected 1, got {crossings}"
+    print("✓ Test 12: Exact multiple of 100 - PASSED")
+
+
+def test_count_zero_crossings_no_crossing():
+    """Test 13: No crossing - rotation doesn't reach zero"""
+    crossings = count_zero_crossings(50, 'R', 5)
+    assert crossings == 0, f"Expected 0, got {crossings}"
+    print("✓ Test 13: No crossing - rotation doesn't reach zero - PASSED")
+
+
+def test_count_zero_crossings_starting_at_zero_right():
+    """Test 14: Starting at zero (right) - should not count as crossing"""
+    crossings = count_zero_crossings(0, 'R', 10)
+    assert crossings == 0, f"Expected 0, got {crossings}"
+    print("✓ Test 14: Starting at zero (right) - should not count as crossing - PASSED")
+
+
+def test_count_zero_crossings_starting_at_zero_left():
+    """Test 15: Starting at zero (left) - should not count as crossing"""
+    crossings = count_zero_crossings(0, 'L', 10)
+    assert crossings == 0, f"Expected 0, got {crossings}"
+    print("✓ Test 15: Starting at zero (left) - should not count as crossing - PASSED")
+
+
+def test_count_zero_crossings_ending_at_zero():
+    """Test 16: Ending at zero - should count as crossing"""
+    crossings = count_zero_crossings(90, 'R', 10)
+    assert crossings == 1, f"Expected 1, got {crossings}"
+    print("✓ Test 16: Ending at zero - should count as crossing - PASSED")
+
+
 def run_all_tests():
     """Run all unit tests"""
     print("=" * 60)
@@ -88,6 +164,7 @@ def run_all_tests():
     print("=" * 60)
 
     tests = [
+        # Part 1 tests
         test_parse_left_rotation,
         test_parse_right_rotation,
         test_left_rotation_wraparound,
@@ -96,6 +173,15 @@ def run_all_tests():
         test_sample_input,
         test_left_rotation_no_wrap,
         test_right_rotation_no_wrap,
+        # Part 2 tests
+        test_count_zero_crossings_simple_right,
+        test_count_zero_crossings_simple_left,
+        test_count_zero_crossings_large,
+        test_count_zero_crossings_exact_multiple,
+        test_count_zero_crossings_no_crossing,
+        test_count_zero_crossings_starting_at_zero_right,
+        test_count_zero_crossings_starting_at_zero_left,
+        test_count_zero_crossings_ending_at_zero,
     ]
 
     passed = 0
