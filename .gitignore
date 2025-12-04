@@ -466,3 +466,8 @@ secrets/
 # Podman/Docker local volumes (keep Dockerfiles)
 .podman-volumes/
 .docker-volumes/
+
+# ===================================================================
+# Advent of Code - Test Results (contains real puzzle answers)
+# ===================================================================
+test_results.md

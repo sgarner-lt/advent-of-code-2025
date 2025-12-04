@@ -81,7 +81,7 @@ run_language_test() {
         return 1
     fi
 
-    log_info "Running $language test for day $day_number with input: $input_path"
+    log_info "Running $language test for day $day_number with input: $input_path" >&2
 
     # Execute language-specific test runner
     # For now, this is a placeholder - actual runners will be in Task Group 3
@@ -94,7 +94,7 @@ run_language_test() {
         return $?
     else
         # Placeholder behavior for testing - simulate execution
-        log_warn "Runner not found: $runner_script (using placeholder)"
+        log_warn "Runner not found: $runner_script (using placeholder)" >&2
         echo '{"part1": null, "part2": null}'
         return 0
     fi

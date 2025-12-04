@@ -150,19 +150,17 @@ if [[ ! -f "$INPUT_PATH" ]]; then
     exit 1
 fi
 
-log_info "Running Gleam integration test for $DAY_FORMATTED with input: $INPUT_PATH"
+log_info "Running Gleam integration test for $DAY_FORMATTED with input: $INPUT_PATH" >&2
 
 # Run gleam and capture output (pipe input file to stdin)
 set +e
-OUTPUT=$(cat "$INPUT_PATH" | gleam run 2>&1)
+OUTPUT=$(cat "$INPUT_PATH" | gleam run)
 EXIT_CODE=$?
 set -e
 
 # Check for compilation errors
 if [[ $EXIT_CODE -ne 0 ]]; then
-    log_error "Gleam execution failed with exit code: $EXIT_CODE"
-    # Print error to stderr for debugging
-    echo "$OUTPUT" >&2
+    log_error "Gleam execution failed with exit code: $EXIT_CODE" >&2
     # Output null JSON to stdout for consistency
     echo '{"part1": null, "part2": null}'
     exit 1

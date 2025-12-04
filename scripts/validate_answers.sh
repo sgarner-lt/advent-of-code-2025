@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Cross-language answer validation for Advent of Code solutions
-# This script provides functions to compare JSON outputs across all 5 languages
+# This script provides functions to compare JSON outputs across all 4 languages
 # Safe to source multiple times (idempotent)
 
 # Prevent multiple sourcing
@@ -73,7 +73,7 @@ compare_all_answers() {
     init_validation_tracking
 
     # Process each language
-    local languages=("rust" "gleam" "roc" "carbon" "bosque")
+    local languages=("rust" "gleam" "carbon" "bosque")
 
     for language in "${languages[@]}"; do
         local stdout_file="${output_dir}/${language}_stdout.txt"

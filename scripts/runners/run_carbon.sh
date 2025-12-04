@@ -152,7 +152,7 @@ if [[ ! -f "$INPUT_PATH" ]]; then
     exit 1
 fi
 
-log_info "Running Carbon integration test for $DAY_FORMATTED with input: $INPUT_PATH"
+log_info "Running Carbon integration test for $DAY_FORMATTED with input: $INPUT_PATH" >&2
 
 # Convert input path to absolute path
 INPUT_PATH_ABS=$(cd "$(dirname "$INPUT_PATH")" && pwd)/$(basename "$INPUT_PATH")

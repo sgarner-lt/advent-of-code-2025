@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Main integration test script for Advent of Code cross-language validation
-# Runs all 5 languages in parallel, validates answers, and generates markdown report
+# Runs all 4 languages in parallel, validates answers, and generates markdown report
 # Usage: ./scripts/test_integration.sh <day_number> [--verbose] [--timeout <seconds>]
 
 set -eo pipefail
@@ -30,7 +30,7 @@ usage() {
     cat << EOF
 Usage: $0 <day_number> [options]
 
-Run integration tests across all 5 languages for a specific Advent of Code day.
+Run integration tests across all 4 languages for a specific Advent of Code day.
 
 Arguments:
   day_number    Day number (1-25)
@@ -188,7 +188,7 @@ main() {
         log_info "========================================"
         echo ""
 
-        local languages=("rust" "gleam" "roc" "carbon" "bosque")
+        local languages=("rust" "gleam" "carbon" "bosque")
         for language in "${languages[@]}"; do
             log_info "--- $language stdout ---"
             get_language_stdout "$language" 2>/dev/null || echo "(no output)"

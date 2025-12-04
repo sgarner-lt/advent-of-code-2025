@@ -85,7 +85,6 @@ generate_markdown_report() {
         echo "## Language Results"
         echo ""
 
-        local languages=("rust" "gleam" "roc" "carbon" "bosque")
         for i in "${!VALIDATION_LANGUAGES[@]}"; do
             local language="${VALIDATION_LANGUAGES[$i]}"
             local part1_value="${VALIDATION_PART1_VALUES[$i]}"
@@ -335,13 +334,26 @@ print_report_summary() {
         fi
     done
 
-    echo "Languages passed: $passed/5"
-    echo "Languages failed: $failed/5"
+    echo "Languages passed: $passed/4"
+    echo "Languages failed: $failed/4"
     echo ""
 
     # Part 1 status
     if all_answers_agree "part1"; then
-        log_success "Part 1: All implementations agree"
+        # Get the actual answer value
+        local part1_answer=""
+        for i in "${!VALIDATION_LANGUAGES[@]}"; do
+            local val="${VALIDATION_PART1_VALUES[$i]}"
+            if [[ "$val" != "ERROR" ]] && [[ "$val" != "null" ]]; then
+                part1_answer="$val"
+                break
+            fi
+        done
+        if [[ -n "$part1_answer" ]]; then
+            log_success "Part 1: All implementations agree - Answer: $part1_answer"
+        else
+            log_success "Part 1: All implementations agree"
+        fi
     else
         local part1_count
         part1_count=$(get_valid_answer_count "part1")
@@ -354,7 +366,20 @@ print_report_summary() {
 
     # Part 2 status
     if all_answers_agree "part2"; then
-        log_success "Part 2: All implementations agree"
+        # Get the actual answer value
+        local part2_answer=""
+        for i in "${!VALIDATION_LANGUAGES[@]}"; do
+            local val="${VALIDATION_PART2_VALUES[$i]}"
+            if [[ "$val" != "ERROR" ]] && [[ "$val" != "null" ]]; then
+                part2_answer="$val"
+                break
+            fi
+        done
+        if [[ -n "$part2_answer" ]]; then
+            log_success "Part 2: All implementations agree - Answer: $part2_answer"
+        else
+            log_success "Part 2: All implementations agree"
+        fi
     else
         local part2_count
         part2_count=$(get_valid_answer_count "part2")

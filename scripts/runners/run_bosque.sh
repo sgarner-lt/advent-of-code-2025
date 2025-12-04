@@ -139,7 +139,7 @@ if [[ "$UNIT_TEST_ONLY" == true ]]; then
 fi
 
 # Run integration test (Python wrapper with input file)
-log_info "Running Bosque integration test for $DAY_FORMATTED with input: $INPUT_PATH (via Python wrapper)"
+log_info "Running Bosque integration test for $DAY_FORMATTED with input: $INPUT_PATH (via Python wrapper)" >&2
 
 # Convert input path to absolute path
 if [[ "$INPUT_PATH" != /* ]]; then
