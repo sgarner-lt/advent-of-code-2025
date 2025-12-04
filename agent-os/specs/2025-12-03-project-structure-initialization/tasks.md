@@ -190,15 +190,15 @@ Total Days: 10 (Advent of Code 2025 is a special 10-day event)
 #### Task Group 6: Bosque Project Setup Documentation
 **Dependencies:** Task Group 1
 
-- [ ] 6.0 Document Bosque manual initialization steps
-  - [ ] 6.1 Create bosque/ root directory setup instructions
+- [x] 6.0 Document Bosque manual initialization steps
+  - [x] 6.1 Create bosque/ root directory setup instructions
     - Command to create bosque/ directory
     - Create README.md noting experimental language status
     - Note about Bosque tooling availability
-  - [ ] 6.2 Document day subdirectory creation (day01/ through day10/)
+  - [x] 6.2 Document day subdirectory creation (day01/ through day10/)
     - Manual directory creation commands
     - File naming convention (day01.bsq, day02.bsq, etc.)
-  - [ ] 6.3 Create boilerplate template for dayXX.bsq
+  - [x] 6.3 Create boilerplate template for dayXX.bsq
     - Namespace declaration: namespace Main;
     - Public main function: public function main(): String
     - File reading logic (if available in Bosque)
@@ -207,7 +207,7 @@ Total Days: 10 (Advent of Code 2025 is a special 10-day event)
     - Return statement for output
     - File path examples: "../../challenges/dayXX/input.txt"
     - Reference hello/bosque/hello.bsq pattern
-  - [ ] 6.4 Create verification steps
+  - [x] 6.4 Create verification steps
     - Bosque compiler/interpreter commands (if available)
     - Expected behavior
     - Fallback plan if tooling is limited
@@ -224,24 +224,24 @@ Total Days: 10 (Advent of Code 2025 is a special 10-day event)
 #### Task Group 7: Challenges Directory Setup Documentation
 **Dependencies:** Task Group 1
 
-- [ ] 7.0 Document challenges/ directory manual setup
-  - [ ] 7.1 Create challenges/ root directory instructions
+- [x] 7.0 Document challenges/ directory manual setup
+  - [x] 7.1 Create challenges/ root directory instructions
     - Command to create challenges/ directory at repository root
     - Purpose explanation (shared input files across languages)
-  - [ ] 7.2 Document day subdirectory creation (day01/ through day10/)
+  - [x] 7.2 Document day subdirectory creation (day01/ through day10/)
     - Commands to create challenges/day01/ through challenges/day10/
     - Explain structure for easy navigation
-  - [ ] 7.3 Create empty input file setup instructions
+  - [x] 7.3 Create empty input file setup instructions
     - Command to create empty input.txt in each day folder
     - Command to create empty input-sample.txt in each day folder
     - touch command examples for Unix/Linux/Mac
     - Windows equivalent commands
-  - [ ] 7.4 Document manual population workflow
+  - [x] 7.4 Document manual population workflow
     - How to obtain actual input (Advent of Code website login)
     - How to extract sample input from problem descriptions
     - File format expectations (plain text)
     - Note that automation is out of scope
-  - [ ] 7.5 Create verification steps
+  - [x] 7.5 Create verification steps
     - Command to list all challenges/dayXX/ directories
     - Command to verify both files exist in each directory
     - Expected directory tree output
@@ -252,6 +252,17 @@ Total Days: 10 (Advent of Code 2025 is a special 10-day event)
 - Both input.txt and input-sample.txt documented
 - Manual population workflow explained
 - Verification steps included
+
+## Execution Order
+
+Recommended documentation creation sequence:
+1. Documentation & Planning (Task Group 1) - Creates master checklist framework
+2. Rust Initialization (Task Group 2) - Most familiar language, good starting point
+3. Gleam Initialization (Task Group 3) - Established tooling
+4. Roc Initialization (Task Group 4) - Established tooling
+5. Carbon Initialization (Task Group 5) - Experimental, may need workarounds
+6. Bosque Initialization (Task Group 6) - Experimental, may need workarounds
+7. Shared Resources (Task Group 7) - Common across all languages
 
 ## Execution Order
 
