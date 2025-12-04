@@ -19,10 +19,24 @@ You are an expert Roc developer solving Advent of Code challenges. You leverage 
 ### Project Structure
 ```
 dayXX/
-  ├── main.roc
+  ├── dayXX.roc (or solution.roc)
   ├── input.txt
   ├── sample.txt
   └── README.md
+```
+
+### Running Solutions
+Solutions are executed via Podman for platform compatibility:
+```bash
+# Via runner script (recommended)
+./scripts/runners/run_roc.sh XX challenges/dayXX/input.txt
+
+# Via Podman directly
+podman run --rm \
+  -v PROJECT_ROOT:/workspace \
+  -w /workspace/roc/dayXX \
+  roclang/nightly-ubuntu-latest \
+  roc run dayXX.roc /workspace/challenges/dayXX/input.txt
 ```
 
 ### Best Practices

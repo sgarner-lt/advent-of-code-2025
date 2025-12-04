@@ -176,10 +176,18 @@ main =
 
 ## Running the Solution
 
+### Using Podman (Recommended)
+
 ```bash
-# Run directly with Roc
-cd roc/dayXX
-${HOME}/.local/bin/roc run solution.roc ../../challenges/dayXX/input.txt
+# Run with actual input via Podman
+podman run --rm \
+  -v /Users/sgarner/projects/sgarner-lt/advent-of-code-2025:/workspace \
+  -w /workspace/roc/dayXX \
+  roclang/nightly-ubuntu-latest \
+  roc run solution.roc /workspace/challenges/dayXX/input.txt
+
+# Or use the runner script
+./scripts/runners/run_roc.sh XX challenges/dayXX/input.txt
 ```
 
 Expected output:
@@ -187,7 +195,38 @@ Expected output:
 {"part1": 12345, "part2": 67890}
 ```
 
+### Using Local Roc Installation
+
+```bash
+# Run directly with Roc
+cd roc/dayXX
+${HOME}/.local/bin/roc run solution.roc ../../challenges/dayXX/input.txt
+```
+
 ## Testing
+
+### Using Podman (Recommended)
+
+```bash
+# Run unit tests via Podman
+podman run --rm \
+  -v /Users/sgarner/projects/sgarner-lt/advent-of-code-2025:/workspace \
+  -w /workspace/roc/dayXX \
+  roclang/nightly-ubuntu-latest \
+  roc test solution.roc
+
+# Or use the runner script
+./scripts/runners/run_roc.sh XX /dev/null --unit-test
+
+# Run with sample input via Podman
+podman run --rm \
+  -v /Users/sgarner/projects/sgarner-lt/advent-of-code-2025:/workspace \
+  -w /workspace/roc/dayXX \
+  roclang/nightly-ubuntu-latest \
+  roc run solution.roc /workspace/challenges/dayXX/input-sample.txt
+```
+
+### Using Local Roc Installation
 
 ```bash
 # Run unit tests (if defined in the file)
@@ -208,3 +247,11 @@ ${HOME}/.local/bin/roc run solution.roc ../../challenges/dayXX/input-sample.txt
 - Read input files using `File.readUtf8` with `Path.fromStr`
 - The basic-cli package provides Task-based IO operations
 - Keep JSON compact (no pretty-printing or extra whitespace)
+
+## Platform Compatibility
+
+For Advent of Code solutions, use Podman to run Roc to ensure platform compatibility:
+- Podman provides consistent platform version (basic-cli 0.20.0)
+- Avoids camelCase vs snake_case function naming issues
+- Uses latest Roc nightly build automatically
+- See [docs/languages/roc.md](../languages/roc.md) for setup details

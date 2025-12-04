@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # Roc test runner for Advent of Code solutions
-# Executes Roc unit tests and integration tests
-# Unit test: roc test solution.roc
-# Integration test: roc run solution.roc <input_path>
+# Executes Roc unit tests and integration tests via Podman
+# Unit test: podman run ... roc test <file>
+# Integration test: podman run ... roc run <file> <input_path>
+# Note: Uses roclang/nightly-ubuntu-latest Docker image
 
 set -eo pipefail
 
@@ -35,7 +36,12 @@ Exit codes:
   1  - Tests failed or error occurred
   2  - Missing arguments or invalid input
 
-Note: This runner handles known Roc platform version issues gracefully.
+Requirements:
+  - Podman must be installed and available in PATH
+  - Docker image: roclang/nightly-ubuntu-latest
+  - Input files must be under the project root directory
+
+Note: This runner executes Roc via Podman to ensure platform compatibility.
 EOF
 }
 
@@ -101,18 +107,22 @@ if [[ ! -d "$ROC_DIR" ]]; then
     exit 1
 fi
 
-# Check for solution.roc file
-if [[ ! -f "$ROC_DIR/solution.roc" ]]; then
-    log_error "solution.roc not found in: $ROC_DIR"
+# Check for solution file (try both naming conventions)
+ROC_FILE=""
+if [[ -f "$ROC_DIR/solution.roc" ]]; then
+    ROC_FILE="solution.roc"
+elif [[ -f "$ROC_DIR/${DAY_FORMATTED}.roc" ]]; then
+    ROC_FILE="${DAY_FORMATTED}.roc"
+else
+    log_error "No Roc file found in: $ROC_DIR (tried solution.roc and ${DAY_FORMATTED}.roc)"
     echo '{"part1": null, "part2": null}'
     exit 1
 fi
 
-# Check if roc is available
-ROC_BIN="${HOME}/.local/bin/roc"
-if [[ ! -x "$ROC_BIN" ]]; then
-    log_error "roc binary not found at: $ROC_BIN"
-    log_error "Please ensure Roc is installed correctly"
+# Check if Podman is available
+if ! command -v podman &> /dev/null; then
+    log_error "podman command not found"
+    log_error "Please ensure Podman is installed correctly"
     echo '{"part1": null, "part2": null}'
     exit 1
 fi
@@ -122,11 +132,15 @@ cd "$ROC_DIR" || exit 1
 
 # Run unit tests if requested
 if [[ "$UNIT_TEST_ONLY" == true ]]; then
-    log_info "Running Roc unit tests for $DAY_FORMATTED"
+    log_info "Running Roc unit tests for $DAY_FORMATTED via Podman"
 
     set +e
-    "$ROC_BIN" test solution.roc 2>&1
-    local exit_code=$?
+    podman run --rm \
+        -v "${PROJECT_ROOT}:/workspace" \
+        -w "/workspace/roc/${DAY_FORMATTED}" \
+        roclang/nightly-ubuntu-latest \
+        roc test "$ROC_FILE" 2>&1
+    exit_code=$?
     set -e
 
     # Handle known platform version issues gracefully
@@ -138,17 +152,36 @@ if [[ "$UNIT_TEST_ONLY" == true ]]; then
 fi
 
 # Run integration test (roc run with input file)
+# Convert relative input path to absolute if needed
+if [[ "$INPUT_PATH" != /* ]]; then
+    # Relative path, convert to absolute from project root
+    INPUT_PATH="${PROJECT_ROOT}/${INPUT_PATH}"
+fi
+
 if [[ ! -f "$INPUT_PATH" ]]; then
     log_error "Input file not found: $INPUT_PATH"
     echo '{"part1": null, "part2": null}'
     exit 1
 fi
 
-log_info "Running Roc integration test for $DAY_FORMATTED with input: $INPUT_PATH"
+# Convert input path to relative path from project root for container
+RELATIVE_INPUT_PATH="${INPUT_PATH#${PROJECT_ROOT}/}"
+if [[ "$RELATIVE_INPUT_PATH" == "$INPUT_PATH" ]]; then
+    # Input path is not under project root, this won't work with container
+    log_error "Input path must be under project root: $PROJECT_ROOT"
+    echo '{"part1": null, "part2": null}'
+    exit 1
+fi
 
-# Run roc and capture output
+log_info "Running Roc integration test for $DAY_FORMATTED with input: $INPUT_PATH via Podman"
+
+# Run roc via Podman and capture output
 set +e
-OUTPUT=$("$ROC_BIN" run solution.roc "$INPUT_PATH" 2>&1)
+OUTPUT=$(podman run --rm \
+    -v "${PROJECT_ROOT}:/workspace" \
+    -w "/workspace/roc/${DAY_FORMATTED}" \
+    roclang/nightly-ubuntu-latest \
+    roc run "$ROC_FILE" -- "/workspace/${RELATIVE_INPUT_PATH}" 2>&1)
 EXIT_CODE=$?
 set -e
 

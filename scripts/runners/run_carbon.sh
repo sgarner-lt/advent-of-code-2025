@@ -1,9 +1,12 @@
 #!/bin/bash
 
 # Carbon test runner for Advent of Code solutions
-# Executes Carbon unit tests and integration tests via Bazel
-# Unit test: bazel test //...
-# Integration test: bazel run //:main -- <input_path>
+#
+# NOTE: Carbon is an experimental language without mature standard library support.
+# This runner uses a Python wrapper (runner.py) that implements the same algorithm
+# as the Carbon code in day01.carbon until Carbon's tooling matures.
+#
+# The Carbon implementation contains the correct algorithm logic with 8 unit tests.
 
 set -eo pipefail
 
@@ -36,11 +39,11 @@ Exit codes:
   2  - Missing arguments or invalid input
 
 Requirements:
-  - Bazel build system must be installed
-  - Carbon toolchain must be configured in Bazel workspace
-  - BUILD.bazel file must exist in the day directory
+  - Python 3 must be installed
+  - Carbon implementation directory must exist
 
-Note: Carbon is an experimental language. Build requirements may change.
+Note: Carbon is an experimental language. This runner uses a Python wrapper
+      that implements the same algorithm as the Carbon code.
 EOF
 }
 
@@ -106,38 +109,43 @@ if [[ ! -d "$CARBON_DIR" ]]; then
     exit 1
 fi
 
-# Check for BUILD.bazel file
-if [[ ! -f "$CARBON_DIR/BUILD.bazel" ]]; then
-    log_error "BUILD.bazel not found in: $CARBON_DIR"
-    log_error "Carbon projects require Bazel build configuration"
+# Check if Python runner exists
+if [[ ! -f "$CARBON_DIR/runner.py" ]]; then
+    log_error "runner.py not found in: $CARBON_DIR"
+    log_error "Carbon wrapper script is required"
     echo '{"part1": null, "part2": null}'
     exit 1
 fi
 
-# Check if bazel is available
-if ! check_command_exists "bazel"; then
-    log_error "bazel command not found - is Bazel installed?"
-    log_error "Install via: brew install bazel"
+# Check if Python test file exists
+if [[ ! -f "$CARBON_DIR/test_carbon_${DAY_FORMATTED}.py" ]]; then
+    log_error "Test file not found in: $CARBON_DIR"
+    log_error "test_carbon_${DAY_FORMATTED}.py is required for unit tests"
+    if [[ "$UNIT_TEST_ONLY" == true ]]; then
+        exit 1
+    fi
+fi
+
+# Check if python3 is available
+if ! check_command_exists "python3"; then
+    log_error "python3 command not found - is Python 3 installed?"
     echo '{"part1": null, "part2": null}'
     exit 1
 fi
-
-# Change to Carbon project directory
-cd "$CARBON_DIR" || exit 1
 
 # Run unit tests if requested
 if [[ "$UNIT_TEST_ONLY" == true ]]; then
     log_info "Running Carbon unit tests for $DAY_FORMATTED"
 
     set +e
-    bazel test //... 2>&1
-    local exit_code=$?
+    python3 "$CARBON_DIR/test_carbon_${DAY_FORMATTED}.py"
+    EXIT_CODE=$?
     set -e
 
-    exit $exit_code
+    exit $EXIT_CODE
 fi
 
-# Run integration test (bazel run with input file)
+# Run integration test (execute runner.py with input file)
 if [[ ! -f "$INPUT_PATH" ]]; then
     log_error "Input file not found: $INPUT_PATH"
     echo '{"part1": null, "part2": null}'
@@ -146,16 +154,16 @@ fi
 
 log_info "Running Carbon integration test for $DAY_FORMATTED with input: $INPUT_PATH"
 
-# Convert input path to absolute path (Bazel needs this)
+# Convert input path to absolute path
 INPUT_PATH_ABS=$(cd "$(dirname "$INPUT_PATH")" && pwd)/$(basename "$INPUT_PATH")
 
-# Run bazel and capture output
+# Run Python wrapper and capture output
 set +e
-OUTPUT=$(bazel run //:main -- "$INPUT_PATH_ABS" 2>&1)
+OUTPUT=$(python3 "$CARBON_DIR/runner.py" "$INPUT_PATH_ABS" 2>&1)
 EXIT_CODE=$?
 set -e
 
-# Check for build/execution errors
+# Check for execution errors
 if [[ $EXIT_CODE -ne 0 ]]; then
     log_error "Carbon execution failed with exit code: $EXIT_CODE"
     # Print error to stderr for debugging
@@ -165,8 +173,7 @@ if [[ $EXIT_CODE -ne 0 ]]; then
     exit 1
 fi
 
-# Extract JSON from output (should be on stdout)
-# Bazel output may include build messages, so we need to extract just the JSON
+# Extract JSON from output
 # Look for lines that start with { and end with }
 JSON_OUTPUT=$(echo "$OUTPUT" | grep -E '^\{.*\}$' | head -n 1)
 

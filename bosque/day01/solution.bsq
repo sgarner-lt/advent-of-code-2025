@@ -1,0 +1,183 @@
+namespace Main;
+
+// Advent of Code 2025 Day 1 Part 1 - Dial Rotation Simulation
+//
+// IMPORTANT: Bosque is a Microsoft Research language with limited stdlib
+// This implementation follows the spec but may require runtime workarounds
+// for file I/O and standard library functions.
+//
+// Algorithm:
+// 1. Start at position 50 on circular dial (0-99)
+// 2. Process rotation instructions (L=left, R=right + distance)
+// 3. Count how many times position equals 0 after each rotation
+// 4. Return count as part1 answer
+//
+// Expected results:
+// - Sample input: 3
+// - Real input: 1097
+
+// Rotate dial position by distance in given direction
+// Returns new position in range 0-99 with wraparound
+function rotateDial(position: Int, isLeft: Bool, distance: Int): Int {
+    var newPos = isLeft ? (position - distance) : (position + distance);
+    // Handle negative modulo for circular wraparound
+    return ((newPos % 100i) + 100i) % 100i;
+}
+
+// Parse direction from instruction line ("L68" -> true, "R48" -> false)
+function parseIsLeft(line: String): Bool? {
+    if(String::length(line) == 0i) {
+        return none;
+    }
+    var firstChar = String::substring(line, 0i, 1i);
+    if(firstChar == "L") {
+        return true;
+    }
+    elif(firstChar == "R") {
+        return false;
+    }
+    else {
+        return none;
+    }
+}
+
+// Parse distance from instruction line ("L68" -> 68)
+function parseDistance(line: String): Int? {
+    if(String::length(line) < 2i) {
+        return none;
+    }
+    var numStr = String::substring(line, 1i, String::length(line));
+    return String::parseInt(numStr);
+}
+
+// Process all rotation instructions and count zeros
+function solvePart1(input: String): Int {
+    var lines = String::split(input, "\n");
+    var position = 50i;
+    var zeroCount = 0i;
+    var i = 0i;
+
+    while(i < List::size<String>(lines)) {
+        var line = String::trim(List::get<String>(lines, i));
+
+        if(String::length(line) > 0i) {
+            var isLeft = parseIsLeft(line);
+            var distance = parseDistance(line);
+
+            if(isLeft != none && distance != none) {
+                position = rotateDial(position, isLeft, distance);
+
+                if(position == 0i) {
+                    zeroCount = zeroCount + 1i;
+                }
+            }
+        }
+
+        i = i + 1i;
+    }
+
+    return zeroCount;
+}
+
+// Main entry point
+// Note: File I/O in Bosque is experimental - may require OS-level workarounds
+entrypoint function main(args: List<String>): Int {
+    var inputContent = "";
+
+    // Read file path from command-line arguments
+    if(List::size<String>(args) > 1i) {
+        var filePath = List::get<String>(args, 1i);
+
+        // WORKAROUND: Bosque file I/O may not be available
+        // The containerized runner should handle file reading
+        // and inject content via stdin or environment variable
+        try {
+            inputContent = Environment::readFile(filePath);
+        }
+        catch {
+            // Fallback: try reading from stdin
+            inputContent = Console::readAll();
+        }
+    }
+
+    var answer = solvePart1(inputContent);
+
+    // Output JSON format for cross-language validation
+    var output = String::concat("{\"part1\": ", Int::toString(answer), ", \"part2\": null}");
+    Console::writeLine(output);
+
+    return 0i;
+}
+
+// === UNIT TESTS (8 tests as per spec) ===
+
+// Test 1: Left rotation with wraparound (5 - 10 = -5 -> 95)
+function test_leftRotationWraparound(): Bool {
+    var result = rotateDial(5i, true, 10i);
+    _assert(result == 95i);
+    return true;
+}
+
+// Test 2: Right rotation with wraparound (95 + 10 = 105 -> 5)
+function test_rightRotationWraparound(): Bool {
+    var result = rotateDial(95i, false, 10i);
+    _assert(result == 5i);
+    return true;
+}
+
+// Test 3: Rotation lands on zero (52 + 48 = 100 -> 0)
+function test_rotationLandsOnZero(): Bool {
+    var result = rotateDial(52i, false, 48i);
+    _assert(result == 0i);
+    return true;
+}
+
+// Test 4: Parse left direction
+function test_parseLeftDirection(): Bool {
+    var isLeft = parseIsLeft("L68");
+    _assert(isLeft != none);
+    _assert(isLeft == true);
+    return true;
+}
+
+// Test 5: Parse right direction
+function test_parseRightDirection(): Bool {
+    var isLeft = parseIsLeft("R48");
+    _assert(isLeft != none);
+    _assert(isLeft == false);
+    return true;
+}
+
+// Test 6: Parse distance value
+function test_parseDistanceValue(): Bool {
+    var dist = parseDistance("L68");
+    _assert(dist != none);
+    _assert(dist == 68i);
+    return true;
+}
+
+// Test 7: Sample input produces expected answer of 3
+function test_sampleInputAnswer(): Bool {
+    var sample = "L68\nL30\nR48\nL5\nR60\nL55\nL1\nL99\nR14\nL82";
+    var result = solvePart1(sample);
+    _assert(result == 3i);
+    return true;
+}
+
+// Test 8: Verify rotation sequence manually
+// Start: 50, L68: 82, L30: 52, R48: 0 (first zero)
+function test_rotationSequenceVerification(): Bool {
+    var pos0 = 50i;
+    _assert(pos0 == 50i);
+
+    var pos1 = rotateDial(pos0, true, 68i);  // 50-68 = -18 -> 82
+    _assert(pos1 == 82i);
+
+    var pos2 = rotateDial(pos1, true, 30i);  // 82-30 = 52
+    _assert(pos2 == 52i);
+
+    var pos3 = rotateDial(pos2, false, 48i); // 52+48 = 100 -> 0
+    _assert(pos3 == 0i);
+
+    return true;
+}

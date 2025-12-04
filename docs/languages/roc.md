@@ -67,14 +67,40 @@ For building from source, follow the [official building guide](https://github.co
 
 ## Basic Usage
 
-### Running a Roc Program
+### Running Roc via Podman (Recommended for Advent of Code)
 
-To run a Roc program directly:
+For platform compatibility and consistency, this project uses Podman to run Roc:
+
+```bash
+# Run a Roc program
+podman run --rm \
+  -v /Users/sgarner/projects/sgarner-lt/advent-of-code-2025:/workspace \
+  -w /workspace/roc/day01 \
+  roclang/nightly-ubuntu-latest \
+  roc run day01.roc input.txt
+
+# Run tests
+podman run --rm \
+  -v /Users/sgarner/projects/sgarner-lt/advent-of-code-2025:/workspace \
+  -w /workspace/roc/day01 \
+  roclang/nightly-ubuntu-latest \
+  roc test day01.roc
+```
+
+**Benefits of Podman approach:**
+- Consistent platform version across different environments
+- Avoids local platform compatibility issues
+- Uses the latest Roc nightly build automatically
+- No need for manual Roc installation
+
+### Running a Roc Program (Local Installation)
+
+If you have Roc installed locally, you can run programs directly:
 ```bash
 roc hello.roc
 ```
 
-### Compiling a Roc Program
+### Compiling a Roc Program (Local Installation)
 
 To compile to a native executable:
 ```bash
@@ -231,10 +257,26 @@ rm -rf ~/.cache/roc
 - String and list manipulation are straightforward
 - Pattern matching is powerful for parsing input
 - The experimental status means you may need to adapt to language changes
+- **Recommended Approach:** Use Podman for running Roc solutions to avoid platform compatibility issues
+
+## Podman vs Local Installation
+
+### When to Use Podman (Recommended)
+- Working on Advent of Code solutions
+- Need consistent platform version
+- Encountering platform compatibility errors
+- Want latest Roc nightly features
+
+### When to Use Local Installation
+- Learning Roc outside of Advent of Code
+- Need faster iteration during development
+- Working on standalone projects
+- Have compatible local platform version
 
 ## Additional Information
 
 - **Installation Script Location:** `scripts/install_roc.sh`
+- **Runner Script Location:** `scripts/runners/run_roc.sh` (uses Podman)
 - **Example Location:** `hello/roc/hello.roc`
-- **Platform:** macOS only
+- **Platform:** macOS only (local) or any platform (Podman)
 - **Architecture Support:** Apple Silicon (arm64) and Intel (x86_64)
