@@ -203,14 +203,14 @@ Bosque runs in a containerized environment using the wrapper script:
 
 ```bash
 # Run via wrapper script
-cd bosque/dayXX
-${HOME}/.local/bin/bosque run solution.bsq < ../../challenges/dayXX/input.txt
+cd solutions/bosque/dayXX
+${HOME}/.local/bin/bosque run solution.bsq < ../../../challenges/dayXX/input.txt
 ```
 
 Or using the project's Bosque wrapper:
 
 ```bash
-./scripts/bosque-wrapper.sh run bosque/dayXX/solution.bsq ../../challenges/dayXX/input.txt
+./scripts/bosque-wrapper.sh run solutions/bosque/dayXX/solution.bsq challenges/dayXX/input.txt
 ```
 
 Expected output:

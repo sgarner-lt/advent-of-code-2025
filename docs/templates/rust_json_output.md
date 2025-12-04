@@ -156,11 +156,11 @@ fn main() -> io::Result<()> {
 
 ```bash
 # Build
-cd rust/dayXX
+cd solutions/rust/dayXX
 cargo build --release
 
 # Run with input file
-cargo run --release -- ../../challenges/dayXX/input.txt
+cargo run --release -- ../../../challenges/dayXX/input.txt
 ```
 
 Expected output:
@@ -175,7 +175,7 @@ Expected output:
 cargo test
 
 # Run with sample input
-cargo run -- ../../challenges/dayXX/input-sample.txt
+cargo run -- ../../../challenges/dayXX/input-sample.txt
 ```
 
 ## Notes

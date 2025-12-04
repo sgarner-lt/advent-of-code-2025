@@ -92,7 +92,7 @@ test_error_recovery_missing_implementations() {
 
     # Create a test scenario where a language directory doesn't exist
     local test_day=99
-    local rust_dir="$PROJECT_ROOT/rust/day${test_day}"
+    local rust_dir="$PROJECT_ROOT/solutions/rust/day${test_day}"
 
     # Verify directory doesn't exist (intentionally missing implementation)
     if [[ -d "$rust_dir" ]]; then

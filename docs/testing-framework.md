@@ -357,7 +357,7 @@ This will:
 Use this command during development to quickly iterate:
 ```bash
 # Write some code
-vim rust/day03/src/lib.rs
+vim solutions/rust/day03/src/lib.rs
 
 # Test it
 ./scripts/test_unit.sh 3
@@ -648,7 +648,7 @@ The testing framework supports Test-Driven Development:
 
 1. **Write Unit Tests**
    - Add tests to your language-specific test file
-   - Example: `rust/day01/src/lib.rs` with `#[cfg(test)]` module
+   - Example: `solutions/rust/day01/src/lib.rs` with `#[cfg(test)]` module
 
 2. **Run Unit Tests**
    ```bash
@@ -683,12 +683,12 @@ touch challenges/day01/input.txt
 
 ### Language Not Implemented
 
-**Error:** `rust: Implementation not found at rust/day01, skipping`
+**Error:** `rust: Implementation not found at solutions/rust/day01, skipping`
 
 **Solution:** Create the language directory structure:
 ```bash
-mkdir -p rust/day01
-cd rust/day01
+mkdir -p solutions/rust/day01
+cd solutions/rust/day01
 cargo init --name day01
 ```
 
@@ -731,13 +731,13 @@ The testing framework handles various error scenarios gracefully to ensure robus
 
 **How Framework Handles:**
 - Each language runner checks if the implementation directory exists before attempting to run
-- If directory is missing (e.g., `rust/day01` doesn't exist), the runner reports "not implemented"
+- If directory is missing (e.g., `solutions/rust/day01` doesn't exist), the runner reports "not implemented"
 - Framework continues with remaining languages instead of failing fast
 - Missing implementations are clearly marked in the markdown report
 
 **What You'll See:**
 ```
-[WARN] rust: Implementation not found at rust/day01, skipping
+[WARN] rust: Implementation not found at solutions/rust/day01, skipping
 ```
 
 **Impact:**
@@ -784,7 +784,7 @@ The testing framework handles various error scenarios gracefully to ensure robus
 ./scripts/test_integration.sh 1 --verbose
 
 # Or compile directly to see errors
-cd rust/day01
+cd solutions/rust/day01
 cargo build
 ```
 
@@ -823,8 +823,8 @@ cargo build
 ./scripts/test_integration.sh 1 --verbose
 
 # Or run the implementation directly
-cd rust/day01
-cargo run -- ../../challenges/day01/input.txt
+cd solutions/rust/day01
+cargo run -- ../../../challenges/day01/input.txt
 ```
 
 ### Timeout Behavior

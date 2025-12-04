@@ -97,7 +97,7 @@ fi
 DAY_FORMATTED=$(printf "day%02d" "$DAY_NUMBER")
 
 # Determine Bosque project directory
-BOSQUE_DIR="${PROJECT_ROOT}/bosque/${DAY_FORMATTED}"
+BOSQUE_DIR="${PROJECT_ROOT}/solutions/bosque/${DAY_FORMATTED}"
 
 # Check if directory exists
 if [[ ! -d "$BOSQUE_DIR" ]]; then

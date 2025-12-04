@@ -201,11 +201,11 @@ pub fn main() {
 
 ```bash
 # Build
-cd gleam/dayXX
+cd solutions/gleam/dayXX
 gleam build
 
 # Run with input file
-gleam run -- ../../challenges/dayXX/input.txt
+gleam run -- ../../../challenges/dayXX/input.txt
 ```
 
 Expected output:

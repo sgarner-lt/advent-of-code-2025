@@ -100,7 +100,7 @@ fi
 DAY_FORMATTED=$(printf "day%02d" "$DAY_NUMBER")
 
 # Determine Carbon project directory
-CARBON_DIR="${PROJECT_ROOT}/carbon/${DAY_FORMATTED}"
+CARBON_DIR="${PROJECT_ROOT}/solutions/carbon/${DAY_FORMATTED}"
 
 # Check if directory exists
 if [[ ! -d "$CARBON_DIR" ]]; then

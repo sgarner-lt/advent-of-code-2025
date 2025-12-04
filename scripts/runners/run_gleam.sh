@@ -90,7 +90,7 @@ fi
 DAY_FORMATTED=$(printf "day%02d" "$DAY_NUMBER")
 
 # Determine Gleam project directory (uses monorepo structure)
-GLEAM_DIR="${PROJECT_ROOT}/gleam"
+GLEAM_DIR="${PROJECT_ROOT}/solutions/gleam"
 
 # Check if Gleam directory exists
 if [[ ! -d "$GLEAM_DIR" ]]; then

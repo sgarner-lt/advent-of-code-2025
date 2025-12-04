@@ -163,11 +163,11 @@ advent-of-code-2025/
 │       ├── input-sample.txt     # Sample input from problem
 │       └── problem-statement.txt # Optional reference
 │
-├── rust/dayXX/           # Rust solutions
-├── gleam/dayXX/          # Gleam solutions
-├── roc/dayXX/            # Roc solutions
-├── carbon/dayXX/         # Carbon solutions
-├── bosque/dayXX/         # Bosque solutions
+├── solutions/            # Solutions organized by language
+│   ├── rust/dayXX/       # Rust solutions
+│   ├── gleam/dayXX/      # Gleam solutions
+│   ├── carbon/dayXX/     # Carbon solutions
+│   └── bosque/dayXX/     # Bosque solutions
 │
 ├── docs/                 # Documentation
 │   ├── languages/        # Per-language guides
@@ -268,7 +268,7 @@ All implementations must output results in JSON format to stdout:
 **Example 2: Run unit tests during development**
 ```bash
 # Write some code
-vim rust/day03/src/lib.rs
+vim solutions/rust/day03/src/lib.rs
 
 # Run unit tests
 ./scripts/test_unit.sh 3

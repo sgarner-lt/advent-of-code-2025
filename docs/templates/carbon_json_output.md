@@ -147,11 +147,11 @@ fn Main() -> i32 {
 
 ```bash
 # Build with Bazel
-cd carbon/dayXX
+cd solutions/carbon/dayXX
 bazel build //:main
 
 # Run the binary (path may vary)
-bazel run //:main -- ../../challenges/dayXX/input.txt
+bazel run //:main -- ../../../challenges/dayXX/input.txt
 ```
 
 Expected output:
@@ -163,7 +163,7 @@ Expected output:
 
 ```bash
 # Run unit tests
-cd carbon/dayXX
+cd solutions/carbon/dayXX
 bazel test //...
 ```
 

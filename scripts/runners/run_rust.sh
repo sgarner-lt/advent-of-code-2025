@@ -90,7 +90,7 @@ fi
 DAY_FORMATTED=$(printf "day%02d" "$DAY_NUMBER")
 
 # Determine Rust project directory
-RUST_DIR="${PROJECT_ROOT}/rust/${DAY_FORMATTED}"
+RUST_DIR="${PROJECT_ROOT}/solutions/rust/${DAY_FORMATTED}"
 
 # Check if directory exists
 if [[ ! -d "$RUST_DIR" ]]; then

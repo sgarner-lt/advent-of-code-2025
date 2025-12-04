@@ -33,11 +33,11 @@ Replaced all instances of real puzzle answers with "REDACTED":
 - `agent-os/specs/2025-12-04-day1-part2-cross-language/spec.md`
 - `agent-os/specs/2025-12-03-day-01-part-1-multi-language-implementation/verifications/final-verification.md`
 - `agent-os/specs/2025-12-03-day-01-part-1-multi-language-implementation/tasks.md`
-- `bosque/day01/LIMITATIONS.md`
-- `bosque/day01/solution.bsq` (comments only)
-- `bosque/day01/README.md`
-- `carbon/day01/README.md`
-- `carbon/day01/day01.carbon` (hardcoded values replaced with placeholders)
+- `solutions/bosque/day01/LIMITATIONS.md`
+- `solutions/bosque/day01/solution.bsq` (comments only)
+- `solutions/bosque/day01/README.md`
+- `solutions/carbon/day01/README.md`
+- `solutions/carbon/day01/day01.carbon` (hardcoded values replaced with placeholders)
 
 ### 4. Verification
 
