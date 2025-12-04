@@ -908,7 +908,9 @@ roc run day01.roc
 
 ## Carbon Initialization
 
-Carbon is an experimental language with limited tooling. These instructions provide a basic structure.
+Carbon is an experimental language with limited tooling. These instructions provide a basic structure based on the hello/carbon example pattern.
+
+**IMPORTANT:** Carbon is highly experimental. Tooling may be limited, unstable, or unavailable. Use these files as templates and pseudocode, with the understanding that the language and its API are subject to change.
 
 ### Step 1: Create Carbon Root Directory
 
@@ -916,6 +918,8 @@ Carbon is an experimental language with limited tooling. These instructions prov
 cd /Users/sgarner/projects/sgarner-lt/advent-of-code-2025
 mkdir -p carbon
 ```
+
+**Note:** Carbon's tooling is experimental. If the carbon compiler is not available, you can still create these files as pseudocode templates for future use.
 
 ### Step 2: Create Day Subdirectories
 
@@ -930,25 +934,26 @@ done
 
 ### Step 3: Create Boilerplate Carbon Files
 
-For each day, create a `.carbon` file with boilerplate.
+For each day, create a `.carbon` file with boilerplate. These files follow the pattern from hello/carbon/hello.carbon.
 
 **Template** (`carbon/dayXX/dayXX.carbon`):
 
 ```carbon
 // Carbon is an experimental successor to C++
-// Tooling and features are limited and subject to change
+// Language status: Experimental - tooling and features subject to change
 // File I/O capabilities may not be fully implemented
 
-package AdventOfCode api;
+package Sample api;
 
 fn Main() -> i32 {
-  // File reading logic - implementation depends on Carbon's evolving API
-  // var input: String = ReadFile("../../challenges/dayXX/input.txt");
+  // File reading logic - implementation depends on Carbon's evolving file I/O API
+  // This is a placeholder for future implementation as Carbon's standard library matures
+  // Example pattern when available: var input: String = ReadFile("../../challenges/dayXX/input.txt");
 
   var result1: i32 = Part1();
   var result2: i32 = Part2();
 
-  // Print results (syntax may need adjustment based on Carbon version)
+  // Output pattern (may need adjustment based on Carbon version)
   // Print("Part 1: ");
   // Print(result1);
   // Print("\nPart 2: ");
@@ -972,19 +977,20 @@ fn Part2() -> i32 {
 # Day 01
 cat > carbon/day01/day01.carbon << 'EOF'
 // Carbon is an experimental successor to C++
-// Tooling and features are limited and subject to change
+// Language status: Experimental - tooling and features subject to change
 // File I/O capabilities may not be fully implemented
 
-package AdventOfCode api;
+package Sample api;
 
 fn Main() -> i32 {
-  // File reading logic - implementation depends on Carbon's evolving API
-  // var input: String = ReadFile("../../challenges/day01/input.txt");
+  // File reading logic - implementation depends on Carbon's evolving file I/O API
+  // This is a placeholder for future implementation as Carbon's standard library matures
+  // Example pattern when available: var input: String = ReadFile("../../challenges/day01/input.txt");
 
   var result1: i32 = Part1();
   var result2: i32 = Part2();
 
-  // Print results (syntax may need adjustment based on Carbon version)
+  // Output pattern (may need adjustment based on Carbon version)
   // Print("Part 1: ");
   // Print(result1);
   // Print("\nPart 2: ");
@@ -1006,19 +1012,20 @@ EOF
 for day in {02..10}; do
   cat > carbon/day${day}/day${day}.carbon << EOF
 // Carbon is an experimental successor to C++
-// Tooling and features are limited and subject to change
+// Language status: Experimental - tooling and features subject to change
 // File I/O capabilities may not be fully implemented
 
-package AdventOfCode api;
+package Sample api;
 
 fn Main() -> i32 {
-  // File reading logic - implementation depends on Carbon's evolving API
-  // var input: String = ReadFile("../../challenges/day${day}/input.txt");
+  // File reading logic - implementation depends on Carbon's evolving file I/O API
+  // This is a placeholder for future implementation as Carbon's standard library matures
+  // Example pattern when available: var input: String = ReadFile("../../challenges/day${day}/input.txt");
 
   var result1: i32 = Part1();
   var result2: i32 = Part2();
 
-  // Print results (syntax may need adjustment based on Carbon version)
+  // Output pattern (may need adjustment based on Carbon version)
   // Print("Part 1: ");
   // Print(result1);
   // Print("\nPart 2: ");
@@ -1038,25 +1045,53 @@ EOF
 done
 ```
 
-### Step 4: Verify Carbon Setup
+### Step 4: File Path Examples
+
+All Carbon files reference the shared challenges directory using relative paths:
+
+```
+../../challenges/dayXX/input.txt
+```
+
+Examples:
+- Day 01: `../../challenges/day01/input.txt`
+- Day 05: `../../challenges/day05/input.txt`
+- Day 10: `../../challenges/day10/input.txt`
+
+### Step 5: Verify Carbon Setup
 
 ```bash
 cd carbon/day01
 
-# Attempt to compile (if Carbon tooling is available)
-carbon compile day01.carbon 2>/dev/null || echo "Carbon tooling not available or syntax needs updating"
+# Attempt to check syntax (if Carbon tooling is available)
+carbon check day01.carbon 2>/dev/null || echo "Carbon tooling not available (expected for experimental language)"
+
+# List the files to verify structure
+ls -la ..
+# Expected: day01.carbon through day10.carbon
 ```
 
-### Troubleshooting
+### Troubleshooting and Fallback Plan
 
-- **No Carbon compiler available**: This is expected. Carbon is highly experimental.
-- **Syntax errors**: Carbon syntax may change. Update based on latest documentation.
-- **File I/O not working**: Carbon may not have full file I/O support yet.
+**No Carbon compiler available:**
+- This is expected. Carbon is highly experimental and tooling is limited or not available.
+- Use Carbon files as pseudocode templates and algorithm planning documents.
 
-**Fallback Plan:**
-- Use Carbon files as pseudocode templates
-- Implement solutions in another language first, then port to Carbon when tooling matures
-- Check Carbon documentation regularly for updates: [github.com/carbon-language/carbon-lang](https://github.com/carbon-language/carbon-lang)
+**Syntax errors when compiler becomes available:**
+- Carbon syntax evolves as the language matures. Update based on latest documentation.
+- Refer to hello/carbon/hello.carbon for current example patterns.
+
+**File I/O not working:**
+- Carbon's standard library is still developing. Full file I/O support may not be available.
+- Options:
+  1. Implement logic without file I/O and pass data as parameters
+  2. Use hardcoded test data while developing
+  3. Check Carbon documentation regularly for new I/O capabilities
+
+**Recommended approach:**
+- Solve challenges in other established languages first (Rust, Gleam, Roc)
+- Return to Carbon implementation when tooling matures
+- Monitor updates at [github.com/carbon-language/carbon-lang](https://github.com/carbon-language/carbon-lang)
 
 ---
 
@@ -1351,6 +1386,7 @@ Use this checklist to track completion of all initialization steps:
 - [ ] Created carbon/day01/ through carbon/day10/ subdirectories
 - [ ] Created boilerplate .carbon files in all day directories
 - [ ] Noted experimental status and tooling limitations
+- [ ] Followed hello/carbon/hello.carbon pattern with package Sample api
 
 ### Bosque
 - [ ] Created bosque/ root directory

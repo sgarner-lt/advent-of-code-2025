@@ -155,15 +155,15 @@ Total Days: 10 (Advent of Code 2025 is a special 10-day event)
 #### Task Group 5: Carbon Project Setup Documentation
 **Dependencies:** Task Group 1
 
-- [ ] 5.0 Document Carbon manual initialization steps
-  - [ ] 5.1 Create carbon/ root directory setup instructions
+- [x] 5.0 Document Carbon manual initialization steps
+  - [x] 5.1 Create carbon/ root directory setup instructions
     - Command to create carbon/ directory
     - Note about Carbon's experimental status
     - Warning about potential tooling limitations
-  - [ ] 5.2 Document day subdirectory creation (day01/ through day10/)
+  - [x] 5.2 Document day subdirectory creation (day01/ through day10/)
     - Manual directory creation commands
     - File naming convention (day01.carbon, day02.carbon, etc.)
-  - [ ] 5.3 Create boilerplate template for dayXX.carbon
+  - [x] 5.3 Create boilerplate template for dayXX.carbon
     - Package declaration: "package Sample api;"
     - Main function signature: fn Main() -> i32
     - File reading logic (if available in Carbon)
@@ -173,7 +173,7 @@ Total Days: 10 (Advent of Code 2025 is a special 10-day event)
     - File path examples: "../../challenges/dayXX/input.txt"
     - Include comment about experimental language status
     - Reference hello/carbon/hello.carbon pattern
-  - [ ] 5.4 Create verification steps
+  - [x] 5.4 Create verification steps
     - Carbon compiler commands (if available)
     - Expected behavior
     - Fallback plan if tooling is limited
