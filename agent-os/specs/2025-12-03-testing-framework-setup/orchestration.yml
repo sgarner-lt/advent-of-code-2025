@@ -1,0 +1,25 @@
+task_groups:
+  - name: JSON Output Standardization
+    claude_code_subagent: implementer
+    standards:
+      - all
+  - name: Parallel Test Execution Engine
+    claude_code_subagent: implementer
+    standards:
+      - all
+  - name: Language-Specific Test Runners
+    claude_code_subagent: implementer
+    standards:
+      - all
+  - name: Test Data Discovery and Cross-Language Validation
+    claude_code_subagent: implementer
+    standards:
+      - all
+  - name: Command-Line Interface and Markdown Reporting
+    claude_code_subagent: implementer
+    standards:
+      - all
+  - name: End-to-End Testing and Documentation
+    claude_code_subagent: implementer
+    standards:
+      - all

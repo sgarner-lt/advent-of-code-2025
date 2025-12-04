@@ -140,14 +140,17 @@ node jsout/Main.mjs
 
 ```
 advent-of-code-2025/
-├── scripts/              # Installation scripts
+├── scripts/              # Installation and testing scripts
 │   ├── common.sh         # Shared utilities for all scripts
 │   ├── install_all.sh    # Master installation script
 │   ├── install_rust.sh
 │   ├── install_gleam.sh
 │   ├── install_roc.sh
 │   ├── install_carbon.sh
-│   └── install_bosque.sh
+│   ├── install_bosque.sh
+│   ├── test_integration.sh  # Integration test runner
+│   ├── test_unit.sh         # Unit test runner
+│   └── runners/             # Language-specific test runners
 │
 ├── hello/                # Hello world programs for each language
 │   ├── rust/
@@ -156,6 +159,18 @@ advent-of-code-2025/
 │   ├── carbon/
 │   └── bosque/
 │
+├── challenges/           # Puzzle inputs and test data
+│   └── dayXX/
+│       ├── input.txt            # Real puzzle input
+│       ├── input-sample.txt     # Sample input from problem
+│       └── problem-statement.txt # Optional reference
+│
+├── rust/dayXX/           # Rust solutions
+├── gleam/dayXX/          # Gleam solutions
+├── roc/dayXX/            # Roc solutions
+├── carbon/dayXX/         # Carbon solutions
+├── bosque/dayXX/         # Bosque solutions
+│
 ├── docs/                 # Documentation
 │   ├── languages/        # Per-language guides
 │   │   ├── rust.md
@@ -163,13 +178,145 @@ advent-of-code-2025/
 │   │   ├── roc.md
 │   │   ├── carbon.md
 │   │   └── bosque.md
-│   └── vscode-setup.md   # VS Code configuration guide
+│   ├── testing-framework.md  # Testing framework documentation
+│   └── vscode-setup.md       # VS Code configuration guide
 │
 ├── docker/               # Container configurations
 │   └── bosque/           # Bosque Dockerfile for macOS
 │
 └── README.md             # This file
 ```
+
+## Testing
+
+This project includes a comprehensive cross-language testing framework that validates solutions across all 5 languages.
+
+### Run Integration Tests
+
+Run integration tests for a specific day across all languages:
+
+```bash
+# Test day 1 with real input
+./scripts/test_integration.sh 1
+
+# Test day 1 with sample input
+./scripts/test_integration.sh 1 --sample
+
+# Test with verbose output for debugging
+./scripts/test_integration.sh 1 --verbose
+
+# Test with custom timeout (default 60 seconds)
+./scripts/test_integration.sh 1 --timeout 120
+```
+
+Integration tests:
+- Run all 5 languages in parallel
+- Validate that implementations produce identical answers
+- Generate a markdown report in `test_results.md`
+- Exit with code 0 if all languages agree, code 1 if any diverge
+
+### Run Unit Tests (TDD Workflow)
+
+Run language-specific unit tests without cross-language validation:
+
+```bash
+# Run unit tests for day 1
+./scripts/test_unit.sh 1
+
+# Run with verbose output
+./scripts/test_unit.sh 1 --verbose
+```
+
+Unit tests:
+- Execute `cargo test`, `gleam test`, etc. for each language
+- Provide faster feedback during development
+- Don't require JSON output format
+- Support test-driven development workflow
+
+### Setting Up Test Data
+
+Create test data for each day:
+
+```bash
+# Create directory for day 1
+mkdir -p challenges/day01
+
+# Add sample input (from problem statement)
+echo "sample data here" > challenges/day01/input-sample.txt
+
+# Add real input (from your Advent of Code account)
+echo "real data here" > challenges/day01/input.txt
+```
+
+### JSON Output Format
+
+All implementations must output results in JSON format to stdout:
+
+```json
+{"part1": 12345, "part2": 67890}
+```
+
+- Use integers, strings, or `null` for values
+- Use `null` for parts not yet implemented
+- See `docs/testing-framework.md` for language-specific examples
+
+### Testing Examples
+
+**Example 1: Test day 1 with sample input**
+```bash
+./scripts/test_integration.sh 1 --sample
+```
+
+**Example 2: Run unit tests during development**
+```bash
+# Write some code
+vim rust/day03/src/lib.rs
+
+# Run unit tests
+./scripts/test_unit.sh 3
+
+# Iterate
+```
+
+**Example 3: Debug with verbose mode**
+```bash
+./scripts/test_integration.sh 5 --verbose
+```
+
+**Example 4: Test slow solution with custom timeout**
+```bash
+./scripts/test_integration.sh 10 --timeout 120
+```
+
+**Example 5: Combine multiple options**
+```bash
+./scripts/test_integration.sh 7 --sample --verbose --timeout 30
+```
+
+### View Test Results
+
+After running integration tests, check the generated report:
+
+```bash
+cat test_results.md
+```
+
+The report includes:
+- Per-language test results with pass/fail status
+- JSON output from each implementation
+- Cross-language validation showing agreements/divergences
+- Error messages for failed tests
+
+### Testing Documentation
+
+For comprehensive testing documentation, see:
+- **[Testing Framework Guide](docs/testing-framework.md)** - Complete testing framework documentation
+  - JSON output contract and examples
+  - Command-line interface reference
+  - Error handling and troubleshooting
+  - Test data conventions
+  - Architecture overview
+  - Best practices
 
 ## Documentation
 
@@ -313,6 +460,16 @@ Carbon requires significant resources and time:
    - Python 3.11+
 4. See [Carbon documentation](docs/languages/carbon.md) for details
 
+### Test failures
+
+If integration tests fail:
+
+1. **Check JSON output format** - must be exact: `{"part1": value, "part2": value}`
+2. **Run with verbose mode** - `./scripts/test_integration.sh 1 --verbose`
+3. **Test with sample input first** - `./scripts/test_integration.sh 1 --sample`
+4. **Verify unit tests pass** - `./scripts/test_unit.sh 1`
+5. **See testing documentation** - `docs/testing-framework.md`
+
 ## Common Issues
 
 ### Issue: "command not found" after installation
@@ -351,6 +508,16 @@ chmod +x scripts/*.sh
 
 # Retry installation
 ./scripts/install_all.sh
+```
+
+### Issue: Tests timing out
+
+**Solution:**
+```bash
+# Increase timeout
+./scripts/test_integration.sh 1 --timeout 120
+
+# Or optimize your algorithm
 ```
 
 ## Contributing
