@@ -93,7 +93,9 @@ generate_markdown_report() {
             local exit_code="${VALIDATION_EXIT_CODES[$i]}"
             local error_msg="${VALIDATION_ERRORS[$i]}"
 
-            echo "### ${language^}"
+            # Capitalize first letter (bash 3.2 compatible)
+            local lang_capitalized=$(echo "$language" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}')
+            echo "### $lang_capitalized"
             echo ""
 
             if [[ "$exit_code" -eq 0 ]]; then

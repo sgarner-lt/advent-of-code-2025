@@ -3,13 +3,13 @@
 Carbon Day 01 Runner Wrapper
 
 This is a temporary wrapper to simulate Carbon execution until Carbon's
-standard library matures to support file I/O and command-line arguments.
+standard library matures to support stdin and I/O operations.
 
 The Carbon implementation in day01.carbon contains the correct algorithm,
 but cannot execute independently due to Carbon's experimental state.
 
 This wrapper:
-1. Reads the input file specified as a command-line argument
+1. Reads input from stdin
 2. Implements the same rotation algorithm as the Carbon code
 3. Outputs the result in the required JSON format
 
@@ -119,16 +119,10 @@ def count_zeros(input_text):
 
 
 def main():
-    """Main entry point"""
-    if len(sys.argv) < 2:
-        print('{"part1": null, "part2": null}')
-        sys.exit(1)
-
-    input_path = sys.argv[1]
-
+    """Main entry point - reads from stdin"""
     try:
-        with open(input_path, 'r') as f:
-            input_text = f.read()
+        # Read input from stdin
+        input_text = sys.stdin.read()
 
         part1_result, part2_result = count_zeros(input_text)
 
@@ -136,9 +130,6 @@ def main():
         output = {"part1": part1_result, "part2": part2_result}
         print(json.dumps(output))
 
-    except FileNotFoundError:
-        print('{"part1": null, "part2": null}')
-        sys.exit(1)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         print('{"part1": null, "part2": null}')

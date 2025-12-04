@@ -155,9 +155,9 @@ if [[ ! -f "$INPUT_PATH_ABS" ]]; then
     exit 1
 fi
 
-# Run Python wrapper and capture output
+# Run Python wrapper and capture output (pipe input file to stdin)
 set +e
-OUTPUT=$(python3 "$BOSQUE_DIR/runner.py" "$INPUT_PATH_ABS" 2>&1)
+OUTPUT=$(cat "$INPUT_PATH_ABS" | python3 "$BOSQUE_DIR/runner.py" 2>&1)
 EXIT_CODE=$?
 set -e
 

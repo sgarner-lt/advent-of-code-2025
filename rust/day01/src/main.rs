@@ -1,24 +1,16 @@
-use std::env;
-use std::fs;
+use std::io::{self, Read};
 
 fn main() {
-    // Get input file path from command-line argument
-    let args: Vec<String> = env::args().collect();
-    let input_path = if args.len() > 1 {
-        &args[1]
-    } else {
-        "../../challenges/day01/input.txt"
-    };
+    // Read input from stdin
+    let mut input = String::new();
+    io::stdin()
+        .read_to_string(&mut input)
+        .expect("Failed to read from stdin");
 
-    let input = read_input(input_path);
     let (part1_result, part2_result) = solve(&input);
 
     // Output JSON format for testing framework
     println!("{{\"part1\": {}, \"part2\": {}}}", part1_result, part2_result);
-}
-
-fn read_input(path: &str) -> String {
-    fs::read_to_string(path).expect("Failed to read input file")
 }
 
 #[derive(Debug, PartialEq)]

@@ -1,14 +1,13 @@
 # Advent of Code 2025
 
-A polyglot approach to [Advent of Code 2025](https://adventofcode.com/2025), solving problems in 5 different programming languages to learn and compare language paradigms, features, and ecosystems.
+A polyglot approach to [Advent of Code 2025](https://adventofcode.com/2025), solving problems in 4 different programming languages to learn and compare language paradigms, features, and ecosystems.
 
 ## Project Overview
 
-This project explores solving Advent of Code 2025 puzzles using five diverse programming languages:
+This project explores solving Advent of Code 2025 puzzles using four diverse programming languages:
 
 - **Rust** - Systems programming language focused on safety and performance
 - **Gleam** - Type-safe functional language for the BEAM VM
-- **Roc** - Fast functional language with unique memory management
 - **Carbon** - Experimental successor to C++ (Google-backed)
 - **Bosque** - Research language exploring regularized programming (Microsoft Research)
 
@@ -22,7 +21,6 @@ This project explores solving Advent of Code 2025 puzzles using five diverse pro
 |----------|-------------------|---------------------|
 | Rust     | 1.83.0 or higher  | Homebrew (rustup)   |
 | Gleam    | 1.13.0 or higher  | Homebrew            |
-| Roc      | Nightly build     | GitHub releases     |
 | Carbon   | Experimental      | Build from source   |
 | Bosque   | Research version  | Podman container    |
 
@@ -45,7 +43,7 @@ xcode-select --install
 
 ### Install All Languages
 
-Use the master installation script to install all 5 language toolchains at once:
+Use the master installation script to install all 4 language toolchains at once:
 
 ```bash
 # Clone this repository

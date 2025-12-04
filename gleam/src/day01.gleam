@@ -12,30 +12,19 @@ pub type Direction {
 
 // Main entry point
 pub fn main() {
-  // Get input file path from command line or use default
-  let input_path = "../challenges/day01/input.txt"
-  run_with_input(input_path)
-}
-
-// Run with a specific input file path
-pub fn run_with_input(input_path: String) {
-  case read_input(input_path) {
-    Ok(content) -> {
-      case solve(content) {
-        Ok(#(part1, part2)) -> {
-          let json = build_json(part1, part2)
-          io.println(json)
-        }
-        Error(err) -> io.println("Error solving: " <> err)
-      }
-    }
-    Error(_) -> io.println("Failed to read input file")
+  // Read input from stdin (using /dev/stdin as a file)
+  let content = case simplifile.read("/dev/stdin") {
+    Ok(text) -> text
+    Error(_) -> ""
   }
-}
 
-// Read input file
-fn read_input(path: String) -> Result(String, simplifile.FileError) {
-  simplifile.read(path)
+  case solve(content) {
+    Ok(#(part1, part2)) -> {
+      let json = build_json(part1, part2)
+      io.println(json)
+    }
+    Error(err) -> io.println("Error solving: " <> err)
+  }
 }
 
 // Parse a single instruction line like "L68" or "R48"

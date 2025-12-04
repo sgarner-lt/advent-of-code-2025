@@ -3,7 +3,7 @@
 # Rust test runner for Advent of Code solutions
 # Executes Rust unit tests and integration tests
 # Unit test: cargo test
-# Integration test: cargo run -- <input_path>
+# Integration test: cat <input_path> | cargo run
 
 set -eo pipefail
 
@@ -113,6 +113,14 @@ if ! check_command_exists "cargo"; then
     exit 1
 fi
 
+# Convert input path to absolute before changing directories
+if [[ "$UNIT_TEST_ONLY" == false ]] && [[ -n "$INPUT_PATH" ]]; then
+    # Convert relative path to absolute if needed
+    if [[ "$INPUT_PATH" != /* ]]; then
+        INPUT_PATH="${PROJECT_ROOT}/${INPUT_PATH}"
+    fi
+fi
+
 # Change to Rust project directory
 cd "$RUST_DIR" || exit 1
 
@@ -137,9 +145,9 @@ fi
 
 log_info "Running Rust integration test for $DAY_FORMATTED with input: $INPUT_PATH"
 
-# Run cargo and capture output
+# Run cargo and capture output (pipe input file to stdin)
 set +e
-OUTPUT=$(cargo run --quiet -- "$INPUT_PATH" 2>&1)
+OUTPUT=$(cat "$INPUT_PATH" | cargo run --quiet 2>&1)
 EXIT_CODE=$?
 set -e
 

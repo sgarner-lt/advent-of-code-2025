@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Test execution framework for parallel language test running
-# This script provides functions to execute tests across all 5 languages in parallel
+# This script provides functions to execute tests across all 4 languages in parallel
 # Safe to source multiple times (idempotent)
 
 # Prevent multiple sourcing
@@ -50,6 +50,7 @@ cleanup_test_output_dir() {
     fi
 }
 
+
 # Execute a single language test
 # Usage: run_language_test <language> <day_number> <input_path>
 # Returns: exit code from the language test runner
@@ -66,7 +67,7 @@ run_language_test() {
 
     # Validate language
     case "$language" in
-        rust|gleam|roc|carbon|bosque)
+        rust|gleam|carbon|bosque)
             ;;
         *)
             log_error "run_language_test: Invalid language '$language'"
@@ -99,7 +100,7 @@ run_language_test() {
     fi
 }
 
-# Launch all 5 languages in background processes
+# Launch all 4 languages in background processes
 # Usage: run_all_tests_parallel <day_number> <input_path> [timeout_seconds]
 # Sets: PROCESS_PIDS, PROCESS_LANGUAGES arrays
 run_all_tests_parallel() {
@@ -126,7 +127,7 @@ run_all_tests_parallel() {
     PROCESS_EXIT_CODES=()
 
     # Launch each language in background
-    local languages=("rust" "gleam" "roc" "carbon" "bosque")
+    local languages=("rust" "gleam" "carbon" "bosque")
 
     for language in "${languages[@]}"; do
         local stdout_file="${TEST_OUTPUT_DIR}/${language}_stdout.txt"
@@ -157,7 +158,7 @@ run_all_tests_parallel() {
         kill_on_timeout "$pid" "$timeout" "$language" &
     done
 
-    log_success "All 5 language tests launched in parallel"
+    log_success "All 4 language tests launched in parallel"
     return 0
 }
 

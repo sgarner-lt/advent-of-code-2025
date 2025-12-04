@@ -2,14 +2,14 @@
 """
 Bosque Day 01 Runner Wrapper
 
-This is a temporary wrapper to handle file I/O for Bosque until BosqueCore's
-standard library supports file operations.
+This is a temporary wrapper to handle I/O for Bosque until BosqueCore's
+standard library supports stdin and I/O operations.
 
 The Bosque implementation in solution.bsq contains the correct algorithm,
-but cannot execute independently due to BosqueCore's lack of file I/O support.
+but cannot execute independently due to BosqueCore's lack of I/O support.
 
 This wrapper:
-1. Reads the input file specified as a command-line argument
+1. Reads input from stdin
 2. Implements the same rotation algorithm as the Bosque code
 3. Outputs the result in the required JSON format
 
@@ -146,16 +146,10 @@ def solve(input_text):
 
 
 def main():
-    """Main entry point"""
-    if len(sys.argv) < 2:
-        print('{"part1": null, "part2": null}')
-        sys.exit(1)
-
-    input_path = sys.argv[1]
-
+    """Main entry point - reads from stdin"""
     try:
-        with open(input_path, 'r') as f:
-            input_text = f.read()
+        # Read input from stdin
+        input_text = sys.stdin.read()
 
         part1_answer, part2_answer = solve(input_text)
 
@@ -163,9 +157,6 @@ def main():
         output = {"part1": part1_answer, "part2": part2_answer}
         print(json.dumps(output))
 
-    except FileNotFoundError:
-        print('{"part1": null, "part2": null}', file=sys.stderr)
-        sys.exit(1)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         print('{"part1": null, "part2": null}')

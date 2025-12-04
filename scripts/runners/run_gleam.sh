@@ -89,19 +89,26 @@ fi
 # Format day with leading zero
 DAY_FORMATTED=$(printf "day%02d" "$DAY_NUMBER")
 
-# Determine Gleam project directory
-GLEAM_DIR="${PROJECT_ROOT}/gleam/${DAY_FORMATTED}"
+# Determine Gleam project directory (uses monorepo structure)
+GLEAM_DIR="${PROJECT_ROOT}/gleam"
 
-# Check if directory exists
+# Check if Gleam directory exists
 if [[ ! -d "$GLEAM_DIR" ]]; then
-    log_error "Gleam implementation not found: $GLEAM_DIR"
+    log_error "Gleam directory not found: $GLEAM_DIR"
     echo '{"part1": null, "part2": null}'
     exit 1
 fi
 
-# Check for gleam.toml
+# Check for gleam.toml at root
 if [[ ! -f "$GLEAM_DIR/gleam.toml" ]]; then
     log_error "gleam.toml not found in: $GLEAM_DIR"
+    echo '{"part1": null, "part2": null}'
+    exit 1
+fi
+
+# Check if day's source file exists
+if [[ ! -f "$GLEAM_DIR/src/${DAY_FORMATTED}.gleam" ]]; then
+    log_error "Gleam implementation not found: $GLEAM_DIR/src/${DAY_FORMATTED}.gleam"
     echo '{"part1": null, "part2": null}'
     exit 1
 fi
@@ -111,6 +118,14 @@ if ! check_command_exists "gleam"; then
     log_error "gleam command not found - is Gleam installed?"
     echo '{"part1": null, "part2": null}'
     exit 1
+fi
+
+# Convert input path to absolute before changing directories
+if [[ "$UNIT_TEST_ONLY" == false ]] && [[ -n "$INPUT_PATH" ]]; then
+    # Convert relative path to absolute if needed
+    if [[ "$INPUT_PATH" != /* ]]; then
+        INPUT_PATH="${PROJECT_ROOT}/${INPUT_PATH}"
+    fi
 fi
 
 # Change to Gleam project directory
@@ -137,9 +152,9 @@ fi
 
 log_info "Running Gleam integration test for $DAY_FORMATTED with input: $INPUT_PATH"
 
-# Run gleam and capture output
+# Run gleam and capture output (pipe input file to stdin)
 set +e
-OUTPUT=$(gleam run -- "$INPUT_PATH" 2>&1)
+OUTPUT=$(cat "$INPUT_PATH" | gleam run 2>&1)
 EXIT_CODE=$?
 set -e
 

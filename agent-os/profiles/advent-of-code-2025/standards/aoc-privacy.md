@@ -31,25 +31,57 @@ When documenting real puzzle results, use:
 **Calculated values are acceptable:**
 - Code that *calculates* answers is fine
 - Hardcoded test expectations for sample data only
-- Real input should be read from file, not hardcoded
+- Real input should be read from file and processed, not hardcoded
 
-**NOT acceptable:**
+**NOT acceptable - Hardcoding Real Answers:**
 ```rust
-// ❌ BAD - Don't hardcode real answers
+// ❌ BAD - Don't hardcode real answers in code
+fn solve_real() -> (i32, i32) {
+    return (1234, 5678); // NEVER do this
+}
+
+// ❌ BAD - Don't hardcode in tests either
 fn test_real_input() {
     assert_eq!(solve("input.txt"), (1234, 5678));
 }
+
+// ❌ BAD - Don't return placeholder zeros either
+fn solve_real() -> (i32, i32) {
+    // TODO: implement
+    return (0, 0); // This is lazy - implement the algorithm!
+}
 ```
 
-**Acceptable:**
+**Acceptable - Must Actually Calculate:**
 ```rust
-// ✅ GOOD - Calculate and verify structure only
+// ✅ GOOD - Actually parse input and calculate
+fn solve_real(input_data: &str) -> (i32, i32) {
+    let instructions = parse_input(input_data);
+    let part1 = calculate_part1(&instructions);
+    let part2 = calculate_part2(&instructions);
+    (part1, part2)
+}
+
+// ✅ GOOD - For languages without file I/O, hardcode the INPUT (not the answer)
+fn solve_real() -> (i32, i32) {
+    // If file I/O unavailable, hardcode the INPUT itself
+    let hardcoded_input = "L123\nR456\n..."; // Input data, not answer
+    parse_and_solve(hardcoded_input) // Calculate from there
+}
+
+// ✅ GOOD - Verify structure only in tests
 fn test_real_input() {
     let result = solve("input.txt");
     assert!(result.0 > 0); // Verify it calculated something
     assert!(result.1 > 0);
 }
 ```
+
+**Key Rule:** Always CALCULATE the answer. If your language lacks file I/O:
+- Hardcode the INPUT data (rotation instructions) ✅
+- Parse and process that input ✅
+- Let the algorithm calculate the answer ✅
+- NEVER hardcode the final answer itself ❌
 
 ### 5. Verification Reports
 When creating verification reports:

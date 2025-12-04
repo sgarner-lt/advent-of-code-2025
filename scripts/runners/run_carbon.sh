@@ -157,9 +157,9 @@ log_info "Running Carbon integration test for $DAY_FORMATTED with input: $INPUT_
 # Convert input path to absolute path
 INPUT_PATH_ABS=$(cd "$(dirname "$INPUT_PATH")" && pwd)/$(basename "$INPUT_PATH")
 
-# Run Python wrapper and capture output
+# Run Python wrapper and capture output (pipe input file to stdin)
 set +e
-OUTPUT=$(python3 "$CARBON_DIR/runner.py" "$INPUT_PATH_ABS" 2>&1)
+OUTPUT=$(cat "$INPUT_PATH_ABS" | python3 "$CARBON_DIR/runner.py" 2>&1)
 EXIT_CODE=$?
 set -e
 
