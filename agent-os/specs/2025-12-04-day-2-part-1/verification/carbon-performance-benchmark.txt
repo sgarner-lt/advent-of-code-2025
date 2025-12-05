@@ -1,0 +1,7 @@
+=== PERFORMANCE BENCHMARK ===
+
+Running Carbon implementation with full input...
+
+{"part1": <REDACTED>, "part2": null}
+cat  < /dev/null  0.00s user 0.00s system 70% cpu 0.006 total
+python3 runner.py  0.84s user 0.02s system 98% cpu 0.876 total

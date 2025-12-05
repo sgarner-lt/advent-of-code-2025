@@ -1,0 +1,297 @@
+namespace Main;
+
+// Advent of Code 2025 Day 2 Part 1 - Invalid Product ID Detection
+//
+// IMPORTANT: Bosque is a Microsoft Research language with limited stdlib
+// This implementation follows the spec but requires a Python wrapper
+// for file I/O and execution due to BosqueCore limitations.
+//
+// Algorithm:
+// Part 1: Identify and sum all invalid product IDs within given ranges
+// An invalid ID is one where the string representation can be split
+// exactly in half with both halves being identical.
+//
+// Examples:
+// - 11: "1" + "1" -> invalid (single digit repeated)
+// - 1212: "12" + "12" -> invalid (two-digit pattern repeated)
+// - 123123: "123" + "123" -> invalid (three-digit pattern repeated)
+// - 123456: "123" + "456" -> valid (halves not equal)
+// - 12345: odd length -> valid (cannot split in half)
+//
+// Expected results:
+// - Sample input (input-sample.txt): 1227775554
+// - Real input (input.txt): <REDACTED>
+
+// Check if a product ID string is invalid
+// An ID is invalid if it has even length and splits exactly in half
+// with both halves being identical
+//
+// Arguments:
+// - numberStr: String representation of the product ID
+//
+// Returns: true if invalid, false if valid
+function isInvalidId(numberStr: String): Bool {
+    var len = String::length(numberStr);
+
+    // Must have even length to split in half
+    if(len % 2i != 0i) {
+        return false;
+    }
+
+    var half = len / 2i;
+    var firstHalf = String::substring(numberStr, 0i, half);
+    var secondHalf = String::substring(numberStr, half, len);
+
+    return firstHalf == secondHalf;
+}
+
+// Parse comma-separated ranges from input string
+// Returns a list of (start, end) tuples representing inclusive ranges
+//
+// Example: "11-22,95-115" -> [(11, 22), (95, 115)]
+//
+// Note: In actual Bosque, this would use proper List types and error handling
+// This is a simplified version for algorithm documentation
+function parseRanges(input: String): List<{start: Int, end: Int}> {
+    var trimmed = String::trim(input);
+    var rangeStrs = String::split(trimmed, ",");
+    var ranges = List::create<{start: Int, end: Int}>();
+
+    var i = 0i;
+    while(i < List::size<String>(rangeStrs)) {
+        var rangeStr = String::trim(List::get<String>(rangeStrs, i));
+
+        if(String::length(rangeStr) > 0i) {
+            var parts = String::split(rangeStr, "-");
+
+            if(List::size<String>(parts) == 2i) {
+                var startStr = String::trim(List::get<String>(parts, 0i));
+                var endStr = String::trim(List::get<String>(parts, 1i));
+
+                var start = String::parseInt(startStr);
+                var end = String::parseInt(endStr);
+
+                if(start != none && end != none) {
+                    var range = {start: start, end: end};
+                    ranges = List::add<{start: Int, end: Int}>(ranges, range);
+                }
+            }
+        }
+
+        i = i + 1i;
+    }
+
+    return ranges;
+}
+
+// Process a range of numbers and return the sum of invalid IDs found
+// An ID is invalid if it's made only of some sequence repeated exactly twice
+//
+// Arguments:
+// - start: Starting number (inclusive)
+// - end: Ending number (inclusive)
+//
+// Returns: Sum of all invalid product IDs in the range
+function processRange(start: Int, end: Int): Int {
+    var sum = 0i;
+    var current = start;
+
+    while(current <= end) {
+        var numStr = Int::toString(current);
+        if(isInvalidId(numStr)) {
+            sum = sum + current;
+        }
+        current = current + 1i;
+    }
+
+    return sum;
+}
+
+// Main solution function that processes all ranges and computes the sum
+// of invalid IDs
+//
+// Arguments:
+// - input: Input string containing comma-separated ranges
+//
+// Returns: Sum of all invalid product IDs
+function solve(input: String): Int {
+    var ranges = parseRanges(input);
+    var totalSum = 0i;
+    var i = 0i;
+
+    while(i < List::size<{start: Int, end: Int}>(ranges)) {
+        var range = List::get<{start: Int, end: Int}>(ranges, i);
+        var rangeSum = processRange(range.start, range.end);
+        totalSum = totalSum + rangeSum;
+        i = i + 1i;
+    }
+
+    return totalSum;
+}
+
+// Main entry point
+// Note: File I/O in Bosque is experimental - requires Python wrapper
+entrypoint function main(args: List<String>): Int {
+    var inputContent = "";
+
+    // Read file path from command-line arguments
+    if(List::size<String>(args) > 1i) {
+        var filePath = List::get<String>(args, 1i);
+
+        // WORKAROUND: Bosque file I/O is not available
+        // The Python runner wrapper handles file reading and execution
+        try {
+            inputContent = Environment::readFile(filePath);
+        }
+        catch {
+            // Fallback: try reading from stdin
+            inputContent = Console::readAll();
+        }
+    }
+
+    var result = solve(inputContent);
+
+    // Output JSON format for cross-language validation
+    var output = String::concat(
+        "{\"part1\": ",
+        Int::toString(result),
+        ", \"part2\": null}"
+    );
+    Console::writeLine(output);
+
+    return 0i;
+}
+
+// === UNIT TESTS (Pattern Detection: 8 tests, Range-based: 8 tests) ===
+
+// ========== Pattern Detection Tests ==========
+
+// Test 1: Single repeated digit (11 -> invalid)
+function test_singleRepeatedDigit(): Bool {
+    _assert(isInvalidId("11") == true);
+    _assert(isInvalidId("22") == true);
+    return true;
+}
+
+// Test 2: Two-digit repeated pattern (1212 -> invalid)
+function test_twoDigitRepeatedPattern(): Bool {
+    _assert(isInvalidId("1212") == true);
+    return true;
+}
+
+// Test 3: Longer repeated pattern (123123 -> invalid)
+function test_longerRepeatedPattern(): Bool {
+    _assert(isInvalidId("123123") == true);
+    return true;
+}
+
+// Test 4: Valid number with no repetition (123456 -> valid)
+function test_validNoRepetition(): Bool {
+    _assert(isInvalidId("123456") == false);
+    return true;
+}
+
+// Test 5: Single digit is valid (odd length, cannot split)
+function test_singleDigitValid(): Bool {
+    _assert(isInvalidId("1") == false);
+    _assert(isInvalidId("5") == false);
+    return true;
+}
+
+// Test 6: Mid-length pattern (12345656 -> valid, halves not equal)
+function test_midLengthPattern(): Bool {
+    _assert(isInvalidId("12345656") == false);
+    return true;
+}
+
+// Test 7: Partial match (123412 -> valid, not exact halves)
+function test_partialMatch(): Bool {
+    _assert(isInvalidId("123412") == false);
+    return true;
+}
+
+// Test 8: Multiple patterns - 121212 splits as "121" + "212" (valid)
+function test_multipleOverlappingPatterns(): Bool {
+    _assert(isInvalidId("121212") == false);
+    return true;
+}
+
+// ========== Range-based Tests ==========
+
+// Test 9: Range 11-22 should contain 11 and 22 (both invalid)
+function test_range_11_to_22(): Bool {
+    var sum = processRange(11i, 22i);
+    _assert(sum == 33i); // 11 + 22
+    return true;
+}
+
+// Test 10: Range 95-115 should contain 99 (one invalid)
+function test_range_95_to_115(): Bool {
+    var sum = processRange(95i, 115i);
+    _assert(sum == 99i);
+    return true;
+}
+
+// Test 11: Range 998-1012 should contain 1010 (one invalid)
+function test_range_998_to_1012(): Bool {
+    var sum = processRange(998i, 1012i);
+    _assert(sum == 1010i);
+    return true;
+}
+
+// Test 12: Range 1188511880-1188511890 should contain 1188511885
+function test_range_1188511880_to_1188511890(): Bool {
+    var sum = processRange(1188511880i, 1188511890i);
+    _assert(sum == 1188511885i);
+    return true;
+}
+
+// Test 13: Range 222220-222224 should contain 222222
+function test_range_222220_to_222224(): Bool {
+    var sum = processRange(222220i, 222224i);
+    _assert(sum == 222222i);
+    return true;
+}
+
+// Test 14: Range 1698522-1698528 should contain no invalid IDs
+function test_range_1698522_to_1698528_noInvalid(): Bool {
+    var sum = processRange(1698522i, 1698528i);
+    _assert(sum == 0i);
+    return true;
+}
+
+// Test 15: Range 446443-446449 should contain 446446
+function test_range_446443_to_446449(): Bool {
+    var sum = processRange(446443i, 446449i);
+    _assert(sum == 446446i);
+    return true;
+}
+
+// Test 16: Range 38593856-38593862 should contain 38593859
+function test_range_38593856_to_38593862(): Bool {
+    var sum = processRange(38593856i, 38593862i);
+    _assert(sum == 38593859i);
+    return true;
+}
+
+// ========== Additional Verification Tests ==========
+
+// Test 17: Specific invalid IDs from problem statement
+function test_specificInvalidIds(): Bool {
+    _assert(isInvalidId("55") == true);
+    _assert(isInvalidId("6464") == true);
+    _assert(isInvalidId("123123") == true);
+    _assert(isInvalidId("99") == true);
+    _assert(isInvalidId("1010") == true);
+    _assert(isInvalidId("222222") == true);
+    _assert(isInvalidId("446446") == true);
+    return true;
+}
+
+// Test 18: Sample input produces expected sum of 1227775554
+function test_sampleInputIntegration(): Bool {
+    var sample = "11-22,95-115,998-1012,1188511880-1188511890,222220-222224,1698522-1698528,446443-446449,38593856-38593862,565653-565659,824824821-824824827,2121212118-2121212124";
+    var result = solve(sample);
+    _assert(result == 1227775554i);
+    return true;
+}

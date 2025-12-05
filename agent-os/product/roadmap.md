@@ -33,7 +33,7 @@
 
 ## Phase 2: Day 2 Solutions
 
-7. [ ] Day 2 Part 1 — Implement Part 1 solution in all 4 languages with cross-language validation `M`
+7. [x] Day 2 Part 1 — Implement Part 1 solution in all 4 languages with cross-language validation `M`
 
 8. [ ] Day 2 Part 2 — Implement Part 2 solution in all 4 languages with cross-language validation `M`
 
