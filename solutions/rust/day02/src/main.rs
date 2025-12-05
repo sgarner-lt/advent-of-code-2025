@@ -53,6 +53,54 @@ fn is_invalid_id(number_str: &str) -> bool {
     first_half == second_half
 }
 
+/// Checks if a product ID string is made only of some sequence of digits repeated 2 or more times.
+/// Returns true if invalid (entire number is pattern repeated 2+ times), false if valid.
+///
+/// The number can be split into any equal-length pattern repeated at least twice.
+/// For example: 111 (1 repeated 3 times), 565656 (56 repeated 3 times), 2121212121 (21 repeated 5 times).
+///
+/// Algorithm:
+/// - For each possible pattern length from 1 to length/2
+/// - Check if length is evenly divisible by pattern length
+/// - Extract the first N characters as the pattern
+/// - Verify entire string equals pattern repeated length/N times
+/// - Return true on first match (short-circuit optimization)
+///
+/// # Examples
+/// ```
+/// assert_eq!(is_invalid_id_part2("111"), true);        // "1" repeated 3 times
+/// assert_eq!(is_invalid_id_part2("565656"), true);     // "56" repeated 3 times
+/// assert_eq!(is_invalid_id_part2("123456"), false);    // not a repeated pattern
+/// assert_eq!(is_invalid_id_part2("11"), true);         // "1" repeated 2 times (still invalid)
+/// ```
+fn is_invalid_id_part2(number_str: &str) -> bool {
+    let len = number_str.len();
+
+    // Check each possible pattern length from 1 to length/2
+    for pattern_length in 1..=(len / 2) {
+        // Only check if length is evenly divisible by pattern length
+        if len % pattern_length != 0 {
+            continue;
+        }
+
+        // Extract the pattern (first N characters)
+        let pattern = &number_str[..pattern_length];
+
+        // Calculate how many repetitions we need
+        let repetitions = len / pattern_length;
+
+        // Build the expected string by repeating the pattern
+        let expected = pattern.repeat(repetitions);
+
+        // If the expected matches the original, it's invalid
+        if expected == number_str {
+            return true;
+        }
+    }
+
+    false
+}
+
 /// Parses comma-separated ranges from input string.
 /// Returns a vector of (start, end) tuples representing inclusive ranges.
 ///
@@ -118,13 +166,35 @@ fn process_range(start: i64, end: i64) -> Vec<i64> {
     invalid_ids
 }
 
+/// Processes a range of numbers and returns the sum of invalid IDs found (Part 2).
+/// An ID is invalid if it's made only of some sequence repeated 2 or more times.
+///
+/// # Arguments
+/// * `start` - Starting number (inclusive)
+/// * `end` - Ending number (inclusive)
+///
+/// # Returns
+/// Sum of all invalid product IDs found in the range
+fn process_range_part2(start: i64, end: i64) -> i64 {
+    let mut sum = 0i64;
+
+    for num in start..=end {
+        let num_str = num.to_string();
+        if is_invalid_id_part2(&num_str) {
+            sum += num;
+        }
+    }
+
+    sum
+}
+
 /// Main solution function that processes all ranges and computes the sum of invalid IDs.
 ///
 /// # Arguments
 /// * `input` - Input string containing comma-separated ranges
 ///
 /// # Returns
-/// Tuple of (part1_sum, part2_placeholder) where part2 is None for now
+/// Tuple of (part1_sum, Some(part2_sum))
 fn solve(input: &str) -> (i64, Option<i64>) {
     let ranges = match parse_ranges(input) {
         Ok(r) => r,
@@ -134,14 +204,19 @@ fn solve(input: &str) -> (i64, Option<i64>) {
         }
     };
 
-    let mut total_sum = 0i64;
+    let mut part1_sum = 0i64;
+    let mut part2_sum = 0i64;
 
-    for (start, end) in ranges {
-        let invalid_ids = process_range(start, end);
-        total_sum += invalid_ids.iter().sum::<i64>();
+    for (start, end) in &ranges {
+        let invalid_ids = process_range(*start, *end);
+        part1_sum += invalid_ids.iter().sum::<i64>();
     }
 
-    (total_sum, None)
+    for (start, end) in ranges {
+        part2_sum += process_range_part2(start, end);
+    }
+
+    (part1_sum, Some(part2_sum))
 }
 
 #[cfg(test)]
@@ -172,7 +247,7 @@ mod tests {
 
     #[test]
     fn test_valid_no_repetition() {
-        // Test "123456" -> valid (not a pattern repeated twice)
+        // Test "123456" -> valid (not a repeated pattern)
         assert_eq!(is_invalid_id("123456"), false);
     }
 
@@ -214,6 +289,48 @@ mod tests {
         // I think I need to check if ANY starting position gives us a pattern repeated exactly twice
         // Let me re-read requirements more carefully...
         assert_eq!(is_invalid_id("121212"), false);
+    }
+
+    // Part 2 Pattern Detection Tests (Task 1.1)
+
+    #[test]
+    fn test_part2_single_char_three_reps() {
+        // Test "111" -> "1" repeated 3 times (invalid in Part 2)
+        assert_eq!(is_invalid_id_part2("111"), true);
+        // Test "999" -> "9" repeated 3 times (invalid in Part 2)
+        assert_eq!(is_invalid_id_part2("999"), true);
+    }
+
+    #[test]
+    fn test_part2_multi_char_three_reps() {
+        // Test "565656" -> "56" repeated 3 times (invalid in Part 2)
+        assert_eq!(is_invalid_id_part2("565656"), true);
+        // Test "824824824" -> "824" repeated 3 times (invalid in Part 2)
+        assert_eq!(is_invalid_id_part2("824824824"), true);
+    }
+
+    #[test]
+    fn test_part2_many_repetitions() {
+        // Test "2121212121" -> "21" repeated 5 times (invalid in Part 2)
+        assert_eq!(is_invalid_id_part2("2121212121"), true);
+    }
+
+    #[test]
+    fn test_part2_edge_cases() {
+        // Test "11" -> still invalid in Part 2 (2 repetitions)
+        assert_eq!(is_invalid_id_part2("11"), true);
+        // Test "123456" -> still valid in Part 2 (no repeating pattern)
+        assert_eq!(is_invalid_id_part2("123456"), false);
+    }
+
+    #[test]
+    fn test_part2_includes_part1_invalid() {
+        // All Part 1 invalid IDs should remain invalid in Part 2
+        assert_eq!(is_invalid_id_part2("11"), true);
+        assert_eq!(is_invalid_id_part2("1212"), true);
+        assert_eq!(is_invalid_id_part2("123123"), true);
+        assert_eq!(is_invalid_id_part2("99"), true);
+        assert_eq!(is_invalid_id_part2("1010"), true);
     }
 
     // Task 1.2: Range-based Unit Tests
@@ -343,5 +460,44 @@ mod tests {
         let input = "11-22,95-115"; // Should be 11 + 22 + 99 = 132
         let (sum, _) = solve(input);
         assert_eq!(sum, 132);
+    }
+
+    // Part 2 Integration Tests (Task 1.5)
+
+    #[test]
+    fn test_part2_integration_sample_input() {
+        // Test with the full sample input from problem statement
+        let input = "11-22,95-115,998-1012,1188511880-1188511890,222220-222224,1698522-1698528,446443-446449,38593856-38593862,565653-565659,824824821-824824827,2121212118-2121212124";
+        let (part1_sum, part2_sum) = solve(input);
+
+        // Verify Part 1 sum remains correct
+        assert_eq!(part1_sum, 1227775554);
+
+        // Verify Part 2 sum
+        assert_eq!(part2_sum, Some(4174379265));
+    }
+
+    #[test]
+    fn test_part2_range_95_to_115() {
+        // Range 95-115: Part 2 should include [99, 111]
+        // 99 is "9" repeated, 111 is "1" repeated 3 times
+        let sum = process_range_part2(95, 115);
+        assert_eq!(sum, 99 + 111); // 210
+    }
+
+    #[test]
+    fn test_part2_range_998_to_1012() {
+        // Range 998-1012: Part 2 should include [999, 1010]
+        // 999 is "9" repeated 3 times, 1010 is "10" repeated
+        let sum = process_range_part2(998, 1012);
+        assert_eq!(sum, 999 + 1010); // 2009
+    }
+
+    #[test]
+    fn test_part2_range_565653_to_565659() {
+        // Range 565653-565659: Part 2 should include [565656]
+        // 565656 is "56" repeated 3 times
+        let sum = process_range_part2(565653, 565659);
+        assert_eq!(sum, 565656);
     }
 }

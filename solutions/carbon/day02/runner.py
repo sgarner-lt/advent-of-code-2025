@@ -55,6 +55,60 @@ def is_invalid_id(number_str):
     return first_half == second_half
 
 
+def is_invalid_id_part2(number_str):
+    """
+    Checks if a product ID is invalid (pattern repeated 2 or more times).
+
+    An ID is invalid if it can be split into any equal-length pattern repeated
+    at least twice.
+
+    Algorithm (Part 2 - Extended Pattern Detection):
+    1. For each possible pattern length from 1 to length/2:
+       a. Check if length is evenly divisible by pattern length
+       b. Extract the first N characters as the pattern
+       c. Build expected string by repeating pattern length/N times
+       d. Compare expected with original - if equal, ID is invalid
+    2. Return True on first match (short-circuit optimization)
+    3. Return False if no pattern found
+
+    Examples:
+    - "111" → "1" * 3 = "111" → True (invalid)
+    - "565656" → "56" * 3 = "565656" → True (invalid)
+    - "2121212121" → "21" * 5 = "2121212121" → True (invalid)
+    - "123456" → no repeating pattern → False (valid)
+
+    Args:
+        number_str: String representation of the product ID
+
+    Returns:
+        True if invalid (pattern repeated 2+ times), False if valid
+
+    Mirrors: fn IsInvalidIdPart2(length: i64) -> bool in day02.carbon
+    """
+    length = len(number_str)
+
+    # Check each possible pattern length from 1 to length/2
+    for pattern_length in range(1, (length // 2) + 1):
+        # Only check if length is evenly divisible by pattern length
+        if length % pattern_length != 0:
+            continue
+
+        # Extract the pattern (first N characters)
+        pattern = number_str[:pattern_length]
+
+        # Calculate how many repetitions we need
+        repetitions = length // pattern_length
+
+        # Build the expected string by repeating the pattern
+        expected = pattern * repetitions
+
+        # If the expected matches the original, it's invalid
+        if expected == number_str:
+            return True
+
+    return False
+
+
 def parse_ranges(input_text):
     """
     Parse comma-separated ranges from input string.
@@ -94,7 +148,7 @@ def parse_ranges(input_text):
 
 def process_range(start, end):
     """
-    Process a range of numbers and return the sum of invalid IDs.
+    Process a range of numbers and return the sum of invalid IDs (Part 1).
 
     Args:
         start: Starting product ID (inclusive)
@@ -113,6 +167,27 @@ def process_range(start, end):
     return total_sum
 
 
+def process_range_part2(start, end):
+    """
+    Process a range of numbers and return the sum of invalid IDs (Part 2).
+
+    Args:
+        start: Starting product ID (inclusive)
+        end: Ending product ID (inclusive)
+
+    Returns:
+        Sum of all invalid product IDs found in the range (Part 2 logic)
+    """
+    total_sum = 0
+
+    for num in range(start, end + 1):
+        num_str = str(num)
+        if is_invalid_id_part2(num_str):
+            total_sum += num
+
+    return total_sum
+
+
 def solve(input_text):
     """
     Main solution function that processes all ranges and computes the sum.
@@ -121,15 +196,18 @@ def solve(input_text):
         input_text: Input string containing comma-separated ranges
 
     Returns:
-        Tuple of (part1_sum, part2_placeholder) where part2 is None for now
+        Tuple of (part1_sum, part2_sum)
     """
     ranges = parse_ranges(input_text)
 
-    total_sum = 0
-    for start, end in ranges:
-        total_sum += process_range(start, end)
+    part1_sum = 0
+    part2_sum = 0
 
-    return (total_sum, None)
+    for start, end in ranges:
+        part1_sum += process_range(start, end)
+        part2_sum += process_range_part2(start, end)
+
+    return (part1_sum, part2_sum)
 
 
 def main():

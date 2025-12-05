@@ -16,14 +16,15 @@ This wrapper:
 The algorithm logic here mirrors the Bosque implementation in solution.bsq
 
 Algorithm:
-- Check if a product ID is invalid (number splits exactly in half with equal parts)
+- Part 1: Check if a product ID is invalid (number splits exactly in half with equal parts)
+- Part 2: Check if a product ID is invalid (pattern repeated 2 or more times)
 - Parse comma-separated ranges from input
 - Process each range, checking each number for invalid pattern
 - Sum all invalid IDs and output JSON result
 
 Expected results:
-- Sample input: {"part1": 1227775554, "part2": null}
-- Real input: {"part1": <REDACTED>, "part2": null}
+- Sample input: {"part1": 1227775554, "part2": 4174379265}
+- Real input: {"part1": <REDACTED>, "part2": <REDACTED>}
 """
 
 import sys
@@ -32,7 +33,7 @@ import json
 
 def is_invalid_id(number_str):
     """
-    Check if a product ID string is invalid
+    Check if a product ID string is invalid (Part 1)
     An ID is invalid if it has even length and splits exactly in half
     with both halves being identical
 
@@ -62,6 +63,59 @@ def is_invalid_id(number_str):
     second_half = number_str[half:]
 
     return first_half == second_half
+
+
+def is_invalid_id_part2(number_str):
+    """
+    Check if a product ID string is invalid (Part 2)
+    An ID is invalid if it can be split into any equal-length pattern
+    repeated 2 or more times
+
+    Algorithm (Part 2 - Extended Pattern Detection):
+    1. For each possible pattern length from 1 to length/2:
+       a. Check if length is evenly divisible by pattern length
+       b. Extract the first N characters as the pattern
+       c. Build expected string by repeating pattern length/N times
+       d. Compare expected with original - if equal, ID is invalid
+    2. Return True on first match (short-circuit optimization)
+    3. Return False if no pattern found
+
+    Args:
+        number_str: String representation of the product ID
+
+    Returns:
+        True if invalid (pattern repeated 2+ times), False if valid
+
+    Mirrors: function isInvalidIdPart2(numberStr: String): Bool
+
+    Examples:
+        is_invalid_id_part2("111") == True          # "1" * 3
+        is_invalid_id_part2("565656") == True       # "56" * 3
+        is_invalid_id_part2("2121212121") == True   # "21" * 5
+        is_invalid_id_part2("123456") == False      # no pattern
+    """
+    length = len(number_str)
+
+    # Check each possible pattern length from 1 to length/2
+    for pattern_length in range(1, (length // 2) + 1):
+        # Only check if length is evenly divisible by pattern length
+        if length % pattern_length != 0:
+            continue
+
+        # Extract the pattern (first N characters)
+        pattern = number_str[:pattern_length]
+
+        # Calculate how many repetitions we need
+        repetitions = length // pattern_length
+
+        # Build the expected string by repeating the pattern
+        expected = pattern * repetitions
+
+        # If the expected matches the original, it's invalid
+        if expected == number_str:
+            return True
+
+    return False
 
 
 def parse_ranges(input_text):
@@ -108,7 +162,7 @@ def parse_ranges(input_text):
 
 def process_range(start, end):
     """
-    Process a range of numbers and return the sum of invalid IDs found
+    Process a range of numbers and return the sum of invalid IDs found (Part 1)
     An ID is invalid if it's made only of some sequence repeated exactly twice
 
     Args:
@@ -130,27 +184,55 @@ def process_range(start, end):
     return total_sum
 
 
+def process_range_part2(start, end):
+    """
+    Process a range of numbers and return the sum of invalid IDs found (Part 2)
+    An ID is invalid if it's made only of some sequence repeated 2 or more times
+
+    Args:
+        start: Starting number (inclusive)
+        end: Ending number (inclusive)
+
+    Returns:
+        Sum of all invalid product IDs in the range
+
+    Mirrors: function processRangePart2(start: Int, end: Int): Int
+    """
+    total_sum = 0
+
+    for num in range(start, end + 1):
+        num_str = str(num)
+        if is_invalid_id_part2(num_str):
+            total_sum += num
+
+    return total_sum
+
+
 def solve(input_text):
     """
     Main solution function that processes all ranges and computes the sum
-    of invalid IDs
+    of invalid IDs for both Part 1 and Part 2
 
     Args:
         input_text: Input string containing comma-separated ranges
 
     Returns:
-        Sum of all invalid product IDs
+        Dictionary with 'part1' and 'part2' sums
 
-    Mirrors: function solve(input: String): Int
+    Mirrors: function solve(input: String): {part1: Int, part2: Int}
     """
     ranges = parse_ranges(input_text)
-    total_sum = 0
+    part1_sum = 0
+    part2_sum = 0
 
     for start, end in ranges:
         range_sum = process_range(start, end)
-        total_sum += range_sum
+        part1_sum += range_sum
 
-    return total_sum
+        range_sum2 = process_range_part2(start, end)
+        part2_sum += range_sum2
+
+    return {"part1": part1_sum, "part2": part2_sum}
 
 
 def main():
@@ -159,11 +241,10 @@ def main():
         # Read input from stdin
         input_text = sys.stdin.read()
 
-        part1_answer = solve(input_text)
+        result = solve(input_text)
 
         # Output JSON format matching other languages
-        output = {"part1": part1_answer, "part2": None}
-        print(json.dumps(output))
+        print(json.dumps(result))
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
