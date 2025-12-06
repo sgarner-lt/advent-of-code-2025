@@ -400,7 +400,7 @@ get_valid_answer_count() {
 
 # Check if all valid answers agree
 # Usage: all_answers_agree <part_number>
-# Returns: 0 if all valid answers are identical, 1 otherwise
+# Returns: 0 if all valid answers are identical OR all are null, 1 otherwise
 all_answers_agree() {
     local part_number="$1"
 
@@ -417,15 +417,28 @@ all_answers_agree() {
         values_array=("${VALIDATION_PART2_VALUES[@]}")
     fi
 
-    # Collect valid values
+    # Collect valid values (non-error, non-null)
     local -a valid_values=()
+    # Also track null and error counts
+    local null_count=0
+    local error_count=0
+
     for value in "${values_array[@]}"; do
-        if [[ "$value" != "ERROR" ]] && [[ "$value" != "null" ]]; then
+        if [[ "$value" == "ERROR" ]]; then
+            error_count=$((error_count + 1))
+        elif [[ "$value" == "null" ]]; then
+            null_count=$((null_count + 1))
+        else
             valid_values+=("$value")
         fi
     done
 
-    # Need at least one valid value
+    # If all values are null (and no errors), that's agreement (not implemented)
+    if [[ ${#valid_values[@]} -eq 0 ]] && [[ $null_count -gt 0 ]] && [[ $error_count -eq 0 ]]; then
+        return 0
+    fi
+
+    # Need at least one valid value if not all null
     if [[ ${#valid_values[@]} -eq 0 ]]; then
         return 1
     fi

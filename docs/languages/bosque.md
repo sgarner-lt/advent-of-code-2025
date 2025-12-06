@@ -454,6 +454,41 @@ podman machine rm
 - **Supported via Container:** macOS, Linux, Windows
 - **Native Support:** Linux only
 
+## Advent of Code File Naming Conventions
+
+### Required File Structure
+
+For Advent of Code solutions in this project, each implemented day **must** have:
+
+```
+solutions/bosque/dayXX/
+├── solution.bsq         # ✅ REQUIRED - Algorithm in Bosque syntax
+├── runner.py            # ✅ REQUIRED - Python wrapper for execution
+└── test_runner.py       # ✅ REQUIRED - Unit tests (8 tests)
+```
+
+### Important Notes
+
+1. **`solution.bsq` is required** - The test runner (`scripts/runners/run_bosque.sh`) specifically looks for a file named `solution.bsq` (not `dayXX.bsq`)
+
+2. **Delete placeholder files** - If you see `dayXX.bsq` placeholder files, delete them after creating `solution.bsq`
+
+3. **Python wrappers handle execution** - Due to BosqueCore's limited file I/O, the actual execution uses Python wrappers that implement the algorithm documented in `solution.bsq`
+
+4. **Consistent across days** - All implemented days follow this exact structure for integration testing
+
+### Why Python Wrappers?
+
+BosqueCore v1.0 has limited standard library support for file I/O operations. The Python wrappers:
+- Read input from stdin
+- Implement the algorithm exactly as documented in `solution.bsq`
+- Output consistent JSON format
+- Enable cross-language integration testing
+
+The `.bsq` files serve as **algorithm specification and documentation** while Python handles execution.
+
+See [`solutions/bosque/README.md`](../../solutions/bosque/README.md) for detailed information.
+
 ## Quick Reference
 
 ```bash
@@ -465,6 +500,12 @@ bosque compile file.bsq
 
 # Run compiled output
 node jsout/Main.mjs
+
+# Run Advent of Code solution (via Python wrapper)
+./scripts/runners/run_bosque.sh 4 challenges/day04/input.txt
+
+# Test a specific day
+./scripts/test_integration.sh 4
 
 # Rebuild container
 podman rmi bosque-toolchain:latest

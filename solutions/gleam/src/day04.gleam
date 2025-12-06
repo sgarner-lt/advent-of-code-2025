@@ -36,6 +36,26 @@ pub fn parse_grid(input: String) -> List(List(String)) {
   |> list.map(string.to_graphemes)
 }
 
+// Get cell at position using list operations
+fn get_cell_at(
+  grid: List(List(String)),
+  row: Int,
+  col: Int,
+) -> Result(String, Nil) {
+  grid
+  |> list.drop(row)
+  |> list.first()
+  |> fn(result) {
+    case result {
+      Ok(line) ->
+        line
+        |> list.drop(col)
+        |> list.first()
+      Error(_) -> Error(Nil)
+    }
+  }()
+}
+
 // Count adjacent rolls ('@' symbols) in all 8 directions
 pub fn count_adjacent_rolls(
   grid: List(List(String)),
@@ -68,7 +88,7 @@ pub fn count_adjacent_rolls(
     // Check bounds
     case new_row >= 0 && new_row < rows && new_col >= 0 && new_col < cols {
       True -> {
-        case get_cell(grid, new_row, new_col) {
+        case get_cell_at(grid, new_row, new_col) {
           Ok("@") -> count + 1
           _ -> count
         }
@@ -78,64 +98,28 @@ pub fn count_adjacent_rolls(
   })
 }
 
-// Get cell value at specific position
-fn get_cell(
-  grid: List(List(String)),
-  row: Int,
-  col: Int,
-) -> Result(String, Nil) {
-  case list.at(grid, row) {
-    Ok(line) -> list.at(line, col)
-    Error(_) -> Error(Nil)
-  }
-}
-
-// Identify accessible rolls (adjacent_count < 4)
+// Identify accessible rolls (adjacent_count < 4) using index_map
 pub fn identify_accessible_rolls(
   grid: List(List(String)),
 ) -> List(#(Int, Int)) {
-  do_identify_accessible(grid, 0, [])
-}
-
-// Recursive helper to identify accessible rolls
-fn do_identify_accessible(
-  grid: List(List(String)),
-  row: Int,
-  acc: List(#(Int, Int)),
-) -> List(#(Int, Int)) {
-  case list.at(grid, row) {
-    Error(_) -> acc
-    Ok(line) -> {
-      let new_acc = check_row_accessibility(grid, row, line, 0, acc)
-      do_identify_accessible(grid, row + 1, new_acc)
-    }
-  }
-}
-
-// Check accessibility for each cell in a row
-fn check_row_accessibility(
-  grid: List(List(String)),
-  row: Int,
-  line: List(String),
-  col: Int,
-  acc: List(#(Int, Int)),
-) -> List(#(Int, Int)) {
-  case list.at(line, col) {
-    Error(_) -> acc
-    Ok(cell) -> {
-      let new_acc = case cell {
+  grid
+  |> list.index_map(fn(line, row) {
+    line
+    |> list.index_map(fn(cell, col) {
+      case cell {
         "@" -> {
           let adjacent_count = count_adjacent_rolls(grid, row, col)
           case adjacent_count < 4 {
-            True -> [#(row, col), ..acc]
-            False -> acc
+            True -> Ok(#(row, col))
+            False -> Error(Nil)
           }
         }
-        _ -> acc
+        _ -> Error(Nil)
       }
-      check_row_accessibility(grid, row, line, col + 1, new_acc)
-    }
-  }
+    })
+    |> list.filter_map(fn(x) { x })
+  })
+  |> list.flatten()
 }
 
 // Create grid visualization
@@ -143,44 +127,18 @@ pub fn create_visualization(
   grid: List(List(String)),
   accessible: List(#(Int, Int)),
 ) -> String {
-  do_create_viz(grid, accessible, 0, [])
-  |> string.join("\n")
-}
-
-// Recursive helper for visualization
-fn do_create_viz(
-  grid: List(List(String)),
-  accessible: List(#(Int, Int)),
-  row: Int,
-  acc: List(String),
-) -> List(String) {
-  case list.at(grid, row) {
-    Error(_) -> list.reverse(acc)
-    Ok(line) -> {
-      let row_str = viz_row(line, accessible, row, 0, [])
-      do_create_viz(grid, accessible, row + 1, [row_str, ..acc])
-    }
-  }
-}
-
-// Create visualization for a single row
-fn viz_row(
-  line: List(String),
-  accessible: List(#(Int, Int)),
-  row: Int,
-  col: Int,
-  acc: List(String),
-) -> String {
-  case list.at(line, col) {
-    Error(_) -> list.reverse(acc) |> string.join("")
-    Ok(cell) -> {
-      let char = case list.contains(accessible, #(row, col)) {
+  grid
+  |> list.index_map(fn(line, row) {
+    line
+    |> list.index_map(fn(cell, col) {
+      case list.contains(accessible, #(row, col)) {
         True -> "x"
         False -> cell
       }
-      viz_row(line, accessible, row, col + 1, [char, ..acc])
-    }
-  }
+    })
+    |> string.join("")
+  })
+  |> string.join("\n")
 }
 
 // Solve the puzzle: count accessible rolls and create visualization

@@ -51,7 +51,7 @@
 
 11. [x] Day 3 Part 2 — Implement Part 2 solution in all 4 languages with cross-language validation `M`
 
-12. [ ] Day 3 Analysis — Compare approaches and document language-specific observations `XS`
+12. [x] Day 3 Analysis — Compare approaches and document language-specific observations `XS`
 
 **Phase 3 Learning Goals:**
 - Implement string processing or pattern matching
@@ -62,7 +62,7 @@
 ## Phase 4: Day 4 Solutions
 *Problem releases December 4th at midnight EST*
 
-13. [ ] Day 4 Part 1 — Implement Part 1 solution in all 4 languages with cross-language validation `M`
+13. [x] Day 4 Part 1 — Implement Part 1 solution in all 4 languages with cross-language validation `M`
 
 14. [ ] Day 4 Part 2 — Implement Part 2 solution in all 4 languages with cross-language validation `M`
 
