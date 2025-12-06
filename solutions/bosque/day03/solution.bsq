@@ -1,0 +1,265 @@
+namespace Main;
+
+// Advent of Code 2025 Day 3 Part 1 - Maximum Battery Pair Selection
+//
+// IMPORTANT: Bosque is a Microsoft Research language with limited stdlib
+// This implementation follows the spec but requires a Python wrapper
+// for file I/O and execution due to BosqueCore limitations.
+//
+// Algorithm:
+// Part 1: For each line of digit strings (battery banks):
+//   1. Extract all possible 2-digit pairs by selecting any two positions (maintaining order)
+//   2. Find the maximum value among those pairs
+//   3. Sum all maximums across all lines
+//
+// Part 2: Not implemented (null)
+//
+// Example:
+// Input line: "987654321111111"
+// Battery selection (maintaining order):
+//   - Positions (0,1): '9','8' = 98
+//   - Positions (0,2): '9','7' = 97
+//   - Positions (0,3): '9','6' = 96
+//   - ... and so on for all pairs where i < j
+// Maximum: 98
+//
+// Expected results:
+// - Sample input (input-sample.txt): Part 1 = 357, Part 2 = null
+// - Real input (input.txt): Part 1 = <REDACTED>, Part 2 = null
+
+// Extract all possible 2-digit pairs from a line by picking any two positions
+// For each pair of positions (i, j) where i < j, creates a 2-digit number
+// from digits at those positions
+//
+// Arguments:
+// - line: String containing digits
+//
+// Returns: List of integers representing all possible 2-digit combinations
+//
+// Example:
+// - "987": positions (0,1)=98, (0,2)=97, (1,2)=87 -> [98, 97, 87]
+// - "11": positions (0,1)=11 -> [11]
+// - "1": no valid pairs -> []
+function extractPairs(line: String): List<Int> {
+    var len = String::length(line);
+    var pairs = List::create<Int>();
+
+    // Need at least 2 characters to make a pair
+    if(len < 2i) {
+        return pairs;
+    }
+
+    var i = 0i;
+    // Nested loops to generate all pairs (i, j) where i < j
+    while(i < len) {
+        var j = i + 1i;
+        while(j < len) {
+            // Extract characters at positions i and j
+            var firstDigit = String::substring(line, i, i + 1i);
+            var secondDigit = String::substring(line, j, j + 1i);
+
+            // Concatenate to form 2-digit number
+            var pairStr = String::concat(firstDigit, secondDigit);
+            var pairValue = String::parseInt(pairStr);
+
+            if(pairValue != none) {
+                pairs = List::add<Int>(pairs, pairValue);
+            }
+
+            j = j + 1i;
+        }
+        i = i + 1i;
+    }
+
+    return pairs;
+}
+
+// Find the maximum value in a list of integers
+// Returns the maximum value, or none if list is empty
+//
+// Arguments:
+// - pairs: List of integers
+//
+// Returns: Maximum integer value or none if empty
+function findMaximum(pairs: List<Int>): Int? {
+    var size = List::size<Int>(pairs);
+
+    if(size == 0i) {
+        return none;
+    }
+
+    var max = List::get<Int>(pairs, 0i);
+    var i = 1i;
+
+    while(i < size) {
+        var current = List::get<Int>(pairs, i);
+        if(current > max) {
+            max = current;
+        }
+        i = i + 1i;
+    }
+
+    return max;
+}
+
+// Process a single line: extract pairs and find maximum
+// Returns the maximum pair value from the line, or 0 if no pairs found
+//
+// Arguments:
+// - line: String containing digits
+//
+// Returns: Maximum pair value as integer
+function processLine(line: String): Int {
+    var trimmed = String::trim(line);
+
+    // Skip empty lines
+    if(String::length(trimmed) == 0i) {
+        return 0i;
+    }
+
+    var pairs = extractPairs(trimmed);
+    var max = findMaximum(pairs);
+
+    if(max == none) {
+        return 0i;
+    }
+
+    return max;
+}
+
+// Main solve function that processes all lines and returns the sum
+// of maximum values from each line
+//
+// Arguments:
+// - input: Multi-line string containing digit strings
+//
+// Returns: Tuple with part1 answer and null for part2
+function solve(input: String): {part1: Int, part2: Int?} {
+    var lines = String::split(input, "\n");
+    var sum = 0i;
+    var i = 0i;
+
+    while(i < List::size<String>(lines)) {
+        var line = List::get<String>(lines, i);
+        var lineMax = processLine(line);
+        sum = sum + lineMax;
+        i = i + 1i;
+    }
+
+    return {part1: sum, part2: none};
+}
+
+// Main entry point
+// Note: File I/O in Bosque is experimental - requires Python wrapper
+entrypoint function main(args: List<String>): Int {
+    var inputContent = "";
+
+    // Read file path from command-line arguments
+    if(List::size<String>(args) > 1i) {
+        var filePath = List::get<String>(args, 1i);
+
+        // WORKAROUND: Bosque file I/O is not available
+        // The Python runner wrapper handles file reading and execution
+        try {
+            inputContent = Environment::readFile(filePath);
+        }
+        catch {
+            // Fallback: try reading from stdin
+            inputContent = Console::readAll();
+        }
+    }
+
+    var result = solve(inputContent);
+
+    // Output JSON format for cross-language validation
+    var part2Str = "null";
+    var output = String::concat(
+        "{\"part1\": ",
+        Int::toString(result.part1),
+        ", \"part2\": ",
+        part2Str,
+        "}"
+    );
+    Console::writeLine(output);
+
+    return 0i;
+}
+
+// === UNIT TESTS (8 tests) ===
+
+// Test 1: Extract pairs from "987" - all combinations
+function test_extractPairsSimple(): Bool {
+    var pairs = extractPairs("987");
+    var size = List::size<Int>(pairs);
+    _assert(size == 3i); // (0,1)=98, (0,2)=97, (1,2)=87
+    return true;
+}
+
+// Test 2: Extract pairs includes expected values
+function test_extractPairsValues(): Bool {
+    var pairs = extractPairs("987");
+    // Should contain 98, 97, 87
+    var found98 = false;
+    var found97 = false;
+    var found87 = false;
+    var i = 0i;
+    while(i < List::size<Int>(pairs)) {
+        var val = List::get<Int>(pairs, i);
+        if(val == 98i) { found98 = true; }
+        if(val == 97i) { found97 = true; }
+        if(val == 87i) { found87 = true; }
+        i = i + 1i;
+    }
+    _assert(found98 && found97 && found87);
+    return true;
+}
+
+// Test 3: Extract pairs from single character (should be empty)
+function test_extractPairsTooShort(): Bool {
+    var pairs = extractPairs("1");
+    _assert(List::size<Int>(pairs) == 0i);
+    return true;
+}
+
+// Test 4: Find maximum in simple list
+function test_findMaximumSimple(): Bool {
+    var pairs = List::create<Int>();
+    pairs = List::add<Int>(pairs, 98i);
+    pairs = List::add<Int>(pairs, 87i);
+    pairs = List::add<Int>(pairs, 76i);
+    var max = findMaximum(pairs);
+    _assert(max != none);
+    _assert(max == 98i);
+    return true;
+}
+
+// Test 5: Process line from sample input (line 1)
+function test_processLineSample1(): Bool {
+    var lineMax = processLine("987654321111111");
+    _assert(lineMax == 98i);
+    return true;
+}
+
+// Test 6: Process line from sample input (line 2)
+// "811111111111119" - positions (0,14): '8' and '9' = 89
+function test_processLineSample2(): Bool {
+    var lineMax = processLine("811111111111119");
+    _assert(lineMax == 89i);
+    return true;
+}
+
+// Test 7: Process line from sample input (line 3)
+function test_processLineSample3(): Bool {
+    var lineMax = processLine("234234234234278");
+    _assert(lineMax == 78i);
+    return true;
+}
+
+// Test 8: Sample input produces expected answer (357)
+function test_sampleInputComplete(): Bool {
+    var sample = "987654321111111\n811111111111119\n234234234234278\n818181911112111";
+    var result = solve(sample);
+    _assert(result.part1 == 357i);
+    _assert(result.part2 == none);
+    return true;
+}

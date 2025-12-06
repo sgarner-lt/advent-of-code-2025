@@ -7,26 +7,19 @@ import simplifile
 
 // Main entry point
 pub fn main() {
-  // Read input from file path
-  let input_path = "../../challenges/day03/input.txt"
-
-  case read_input(input_path) {
-    Ok(content) -> {
-      case solve(content) {
-        Ok(answer) -> {
-          let json = build_json(answer)
-          io.println(json)
-        }
-        Error(err) -> io.println("Error solving: " <> err)
-      }
-    }
-    Error(_) -> io.println("Failed to read input file")
+  // Read input from stdin (using /dev/stdin as a file)
+  let content = case simplifile.read("/dev/stdin") {
+    Ok(text) -> text
+    Error(_) -> ""
   }
-}
 
-// Read input file
-fn read_input(path: String) -> Result(String, simplifile.FileError) {
-  simplifile.read(path)
+  case solve(content) {
+    Ok(answer) -> {
+      let json = build_json(answer)
+      io.println(json)
+    }
+    Error(err) -> io.println("Error solving: " <> err)
+  }
 }
 
 // Solve the puzzle: sum of maximum pairs from each line

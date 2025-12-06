@@ -153,8 +153,9 @@ fi
 log_info "Running Gleam integration test for $DAY_FORMATTED with input: $INPUT_PATH" >&2
 
 # Run gleam and capture output (pipe input file to stdin)
+# Use -m flag to specify the module to run
 set +e
-OUTPUT=$(cat "$INPUT_PATH" | gleam run)
+OUTPUT=$(cat "$INPUT_PATH" | gleam run -m "$DAY_FORMATTED")
 EXIT_CODE=$?
 set -e
 
