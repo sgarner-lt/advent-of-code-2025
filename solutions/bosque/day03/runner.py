@@ -20,20 +20,22 @@ Algorithm:
   1. Extract all possible 2-digit pairs by selecting any two positions (maintaining order)
   2. Find the maximum value among those pairs
   3. Sum all maximums across all lines
-- Part 2: Not implemented (null)
+- Part 2: For each line:
+  1. Extract maximum 12-digit number using greedy algorithm
+  2. Sum all maximums across all lines
 
 Example:
 - Input line: "987654321111111"
-- Battery selection (maintaining order):
+- Part 1 battery selection (maintaining order):
   - Positions (0,1): '9','8' = 98
   - Positions (0,2): '9','7' = 97
   - Positions (1,2): '8','7' = 87
   - ... and so on for all pairs where i < j
 - Maximum: 98
+- Part 2: Extract 12-digit maximum using greedy algorithm: 987654321111
 
 Expected results:
-- Sample input: {"part1": 357, "part2": null}
-- Real input: {"part1": <REDACTED>, "part2": null}
+- Sample input: {"part1": 357, "part2": 3121910778619}
 """
 
 import sys
@@ -85,6 +87,67 @@ def extract_pairs(line):
                     continue
 
     return pairs
+
+
+def extract_max_k_digits(line, k):
+    """
+    Extracts the maximum k-digit number from a line using a greedy algorithm.
+
+    Algorithm: For each position i (0 to k-1) in the result:
+    1. Calculate search window: from current_pos to (line_length - remaining_digits)
+    2. Find the maximum digit in this search window
+    3. Append the maximum digit to the result
+    4. Update current_pos to immediately after the selected digit
+
+    This greedy approach guarantees the lexicographically largest k-digit number,
+    which equals the maximum numeric value for fixed-length numbers.
+
+    Args:
+        line: String containing digit characters
+        k: Number of digits to extract
+
+    Returns:
+        Integer representing the maximum k-digit number, or None if invalid input
+
+    Mirrors: function extractMaxKDigits(line: String, k: Int): Int?
+
+    Examples:
+        extract_max_k_digits("987654321111111", 12) == 987654321111
+        extract_max_k_digits("811111111111119", 12) == 811111111119
+    """
+    # Validate input: need at least k digits
+    if len(line) < k:
+        return None
+
+    # Validate all characters are digits
+    if not all(c.isdigit() for c in line):
+        return None
+
+    result = ""
+    current_pos = 0
+
+    # For each position in the k-digit result
+    for i in range(k):
+        remaining_digits = k - i
+        # Calculate search window: must leave enough digits to complete the k-digit number
+        search_end = len(line) - remaining_digits + 1
+
+        # Find the maximum digit in the search window [current_pos, search_end)
+        max_digit = line[current_pos]
+        max_pos = current_pos
+
+        for pos in range(current_pos, search_end):
+            if line[pos] > max_digit:
+                max_digit = line[pos]
+                max_pos = pos
+
+        # Append the maximum digit to the result
+        result += max_digit
+        # Move current position to immediately after the selected digit
+        current_pos = max_pos + 1
+
+    # Parse the k-digit string as integer (64-bit)
+    return int(result)
 
 
 def find_maximum(pairs):
@@ -143,18 +206,31 @@ def solve(input_text):
         input_text: Multi-line string containing digit strings
 
     Returns:
-        Dictionary with 'part1' answer and None for 'part2'
+        Dictionary with 'part1' answer and 'part2' answer
 
-    Mirrors: function solve(input: String): {part1: Int, part2: Int?}
+    Mirrors: function solve(input: String): {part1: Int, part2: Int}
     """
     lines = input_text.split('\n')
-    total_sum = 0
+    part1_sum = 0
+    part2_sum = 0
 
     for line in lines:
-        line_max = process_line(line)
-        total_sum += line_max
+        trimmed = line.strip()
+        if not trimmed:
+            continue
 
-    return {"part1": total_sum, "part2": None}
+        # Part 1: Extract max 2-digit pair
+        pairs = extract_pairs(trimmed)
+        max_value = find_maximum(pairs)
+        if max_value is not None:
+            part1_sum += max_value
+
+        # Part 2: Extract max 12-digit number
+        max_12_digit = extract_max_k_digits(trimmed, 12)
+        if max_12_digit is not None:
+            part2_sum += max_12_digit
+
+    return {"part1": part1_sum, "part2": part2_sum}
 
 
 def main():

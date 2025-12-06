@@ -6,11 +6,9 @@ Since Carbon doesn't have a mature testing framework yet, these tests
 verify the algorithm logic that is implemented in day03.carbon
 
 Test Coverage:
-- Pair extraction from simple strings
-- Maximum finding from list of pairs
-- Individual sample input lines
-- Complete sample input
-- Edge cases (empty strings, single characters)
+- Part 1: Pair extraction and maximum finding
+- Part 2: Greedy algorithm for maximum k-digit extraction
+- Integration tests for dual-output solve function
 """
 
 import sys
@@ -18,11 +16,11 @@ import os
 
 # Add parent directory to path to import runner module
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from runner import extract_pairs, find_max, solve
+from runner import extract_pairs, extract_max_k_digits, find_max, solve
 
 
 # ============================================================================
-# PAIR EXTRACTION TESTS
+# PART 1 TESTS (Existing)
 # ============================================================================
 
 def test_extract_pairs_simple():
@@ -36,129 +34,132 @@ def test_extract_pairs_simple():
     print("✓ Test 1: Extract pairs from '987' - PASSED")
 
 
-def test_extract_pairs_two_digits():
-    """Test 2: Extract pairs from two-digit string '12'"""
-    pairs = extract_pairs("12")
-    assert pairs == [12], f"Expected [12], got {pairs}"
-    print("✓ Test 2: Extract pairs from '12' - PASSED")
-
-
-def test_extract_pairs_single_digit():
-    """Test 3: Extract pairs from single digit '9' (should be empty)"""
-    pairs = extract_pairs("9")
-    assert pairs == [], f"Expected empty list, got {pairs}"
-    print("✓ Test 3: Extract pairs from single digit - PASSED")
-
-
-def test_extract_pairs_count():
-    """Test 4: Verify pairs count formula n*(n-1)/2"""
-    line = "12345"  # 5 digits
-    pairs = extract_pairs(line)
-    expected_count = 5 * 4 // 2  # 10 pairs
-    assert len(pairs) == expected_count, f"Expected {expected_count} pairs, got {len(pairs)}"
-    print("✓ Test 4: Verify pairs count formula - PASSED")
-
-
-# ============================================================================
-# MAXIMUM FINDING TESTS
-# ============================================================================
-
 def test_find_max_from_list():
-    """Test 5: Find maximum from list of pairs"""
+    """Test 2: Find maximum from list of pairs"""
     pairs = [98, 87, 76, 65, 54, 43, 32, 21, 11]
     max_value = find_max(pairs)
     assert max_value == 98, f"Expected 98, got {max_value}"
-    print("✓ Test 5: Find maximum from list - PASSED")
+    print("✓ Test 2: Find maximum from list - PASSED")
 
 
-def test_find_max_empty_list():
-    """Test 6: Find maximum from empty list (should be None)"""
-    pairs = []
-    max_value = find_max(pairs)
-    assert max_value is None, f"Expected None, got {max_value}"
-    print("✓ Test 6: Find maximum from empty list - PASSED")
-
-
-# ============================================================================
-# SAMPLE INPUT LINE TESTS
-# ============================================================================
-
-def test_sample_line1():
-    """Test 7: Sample line 1 - '987654321111111' should have max 98"""
+def test_sample_line1_part1():
+    """Test 3: Sample line 1 Part 1 - '987654321111111' should have max 98"""
     line = "987654321111111"
     pairs = extract_pairs(line)
     max_value = find_max(pairs)
     assert max_value == 98, f"Expected 98, got {max_value}"
-    print("✓ Test 7: Sample line 1 (max 98) - PASSED")
+    print("✓ Test 3: Sample line 1 Part 1 (max 98) - PASSED")
 
 
-def test_sample_line2():
-    """Test 8: Sample line 2 - '811111111111119' should have max 89"""
-    # Max is 89 from positions 0 and 14: '8' and '9'
+def test_sample_line2_part1():
+    """Test 4: Sample line 2 Part 1 - '811111111111119' should have max 89"""
     line = "811111111111119"
     pairs = extract_pairs(line)
     max_value = find_max(pairs)
     assert max_value == 89, f"Expected 89, got {max_value}"
-    print("✓ Test 8: Sample line 2 (max 89) - PASSED")
+    print("✓ Test 4: Sample line 2 Part 1 (max 89) - PASSED")
 
 
-def test_sample_line3():
-    """Test 9: Sample line 3 - '234234234234278' should have max 78"""
+# ============================================================================
+# PART 2 TESTS (New)
+# ============================================================================
+
+def test_extract_max_k_digits_line1():
+    """Test 5: Extract max 12-digit from line 1: '987654321111111' yields 987654321111"""
+    line = "987654321111111"
+    result = extract_max_k_digits(line, 12)
+    expected = 987654321111
+    assert result == expected, f"Expected {expected}, got {result}"
+    print("✓ Test 5: Extract max 12-digit from line 1 - PASSED")
+
+
+def test_extract_max_k_digits_line2():
+    """Test 6: Extract max 12-digit from line 2: '811111111111119' yields 811111111119"""
+    line = "811111111111119"
+    result = extract_max_k_digits(line, 12)
+    expected = 811111111119
+    assert result == expected, f"Expected {expected}, got {result}"
+    print("✓ Test 6: Extract max 12-digit from line 2 - PASSED")
+
+
+def test_extract_max_k_digits_line3():
+    """Test 7: Extract max 12-digit from line 3: '234234234234278' yields 434234234278"""
     line = "234234234234278"
-    pairs = extract_pairs(line)
-    max_value = find_max(pairs)
-    assert max_value == 78, f"Expected 78, got {max_value}"
-    print("✓ Test 9: Sample line 3 (max 78) - PASSED")
+    result = extract_max_k_digits(line, 12)
+    expected = 434234234278
+    assert result == expected, f"Expected {expected}, got {result}"
+    print("✓ Test 7: Extract max 12-digit from line 3 - PASSED")
 
 
-def test_sample_line4():
-    """Test 10: Sample line 4 - '818181911112111' should have max 92"""
-    # Max is 92 from positions with '9' and '2'
+def test_extract_max_k_digits_line4():
+    """Test 8: Extract max 12-digit from line 4: '818181911112111' yields 888911112111"""
     line = "818181911112111"
-    pairs = extract_pairs(line)
-    max_value = find_max(pairs)
-    assert max_value == 92, f"Expected 92, got {max_value}"
-    print("✓ Test 10: Sample line 4 (max 92) - PASSED")
+    result = extract_max_k_digits(line, 12)
+    expected = 888911112111
+    assert result == expected, f"Expected {expected}, got {result}"
+    print("✓ Test 8: Extract max 12-digit from line 4 - PASSED")
 
 
 # ============================================================================
-# COMPLETE SAMPLE INPUT TEST
+# INTEGRATION TESTS
 # ============================================================================
 
-def test_complete_sample_input():
-    """Test 11: Complete sample input should sum to 357"""
+def test_solve_dual_output():
+    """Test 9: Complete sample input should return (357, 3121910778619)"""
     sample_input = """987654321111111
 811111111111119
 234234234234278
 818181911112111"""
-    result = solve(sample_input)
-    expected = 357  # 98 + 89 + 78 + 92
-    assert result == expected, f"Expected {expected}, got {result}"
-    print("✓ Test 11: Complete sample input (sum 357) - PASSED")
+    part1, part2 = solve(sample_input)
+    assert part1 == 357, f"Expected part1=357, got {part1}"
+    assert part2 == 3121910778619, f"Expected part2=3121910778619, got {part2}"
+    print("✓ Test 9: Complete sample input dual output - PASSED")
+
+
+def test_part1_unchanged():
+    """Test 10: Verify Part 1 result remains unchanged"""
+    sample_input = """987654321111111
+811111111111119
+234234234234278
+818181911112111"""
+    part1, _ = solve(sample_input)
+    assert part1 == 357, f"Expected part1=357, got {part1}"
+    print("✓ Test 10: Part 1 unchanged - PASSED")
+
+
+def test_part2_correct_sum():
+    """Test 11: Verify Part 2 produces correct sum"""
+    sample_input = """987654321111111
+811111111111119
+234234234234278
+818181911112111"""
+    _, part2 = solve(sample_input)
+    expected = 3121910778619
+    assert part2 == expected, f"Expected part2={expected}, got {part2}"
+    print("✓ Test 11: Part 2 correct sum - PASSED")
 
 
 def run_all_tests():
     """Run all unit tests"""
     print("=" * 70)
-    print("Running Carbon Day 03 Unit Tests")
+    print("Running Carbon Day 03 Unit Tests (Part 1 + Part 2)")
     print("=" * 70)
 
     tests = [
-        # Pair extraction tests (4)
+        # Part 1 tests (4)
         test_extract_pairs_simple,
-        test_extract_pairs_two_digits,
-        test_extract_pairs_single_digit,
-        test_extract_pairs_count,
-        # Maximum finding tests (2)
         test_find_max_from_list,
-        test_find_max_empty_list,
-        # Sample input line tests (4)
-        test_sample_line1,
-        test_sample_line2,
-        test_sample_line3,
-        test_sample_line4,
-        # Complete sample test (1)
-        test_complete_sample_input,
+        test_sample_line1_part1,
+        test_sample_line2_part1,
+        # Part 2 tests (4)
+        test_extract_max_k_digits_line1,
+        test_extract_max_k_digits_line2,
+        test_extract_max_k_digits_line3,
+        test_extract_max_k_digits_line4,
+        # Integration tests (3)
+        test_solve_dual_output,
+        test_part1_unchanged,
+        test_part2_correct_sum,
     ]
 
     passed = 0

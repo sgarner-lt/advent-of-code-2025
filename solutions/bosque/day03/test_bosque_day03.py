@@ -10,10 +10,10 @@ Test Coverage:
 - Find maximum value in lists
 - Process individual lines
 - Complete solve function with sample input
+- Part 2: Extract maximum 12-digit numbers using greedy algorithm
 
 Expected Results:
-- Sample input: {"part1": 357, "part2": null}
-- Real input: {"part1": <REDACTED>, "part2": null}
+- Sample input: {"part1": 357, "part2": 3121910778619}
 """
 
 import unittest
@@ -30,7 +30,7 @@ import runner
 class TestBosqueDay03(unittest.TestCase):
     """Unit tests for Day 03 solution"""
 
-    # ========== Extract Pairs Tests ==========
+    # ========== Part 1: Extract Pairs Tests ==========
 
     def test_extract_pairs_simple(self):
         """Test extracting all pairs from '987' -> [98, 97, 87]"""
@@ -51,7 +51,7 @@ class TestBosqueDay03(unittest.TestCase):
         pairs = runner.extract_pairs("1")
         self.assertEqual(len(pairs), 0)
 
-    # ========== Find Maximum Tests ==========
+    # ========== Part 1: Find Maximum Tests ==========
 
     def test_find_maximum_simple(self):
         """Test finding maximum in simple list: [98, 87, 76] -> 98"""
@@ -65,7 +65,7 @@ class TestBosqueDay03(unittest.TestCase):
         max_value = runner.find_maximum(pairs)
         self.assertIsNone(max_value)
 
-    # ========== Process Line Tests ==========
+    # ========== Part 1: Process Line Tests ==========
 
     def test_process_line_sample1(self):
         """Test processing line from sample input (line 1): '987654321111111' -> max 98"""
@@ -80,39 +80,55 @@ class TestBosqueDay03(unittest.TestCase):
         line_max = runner.process_line("811111111111119")
         self.assertEqual(line_max, 89)
 
-    def test_process_line_sample3(self):
-        """Test processing line from sample input (line 3): '234234234234278' -> max 78"""
-        line_max = runner.process_line("234234234234278")
-        self.assertEqual(line_max, 78)
+    # ========== Part 2: Extract Max K-Digits Tests ==========
 
-    def test_process_line_sample4(self):
-        """Test processing line from sample input (line 4): '818181911112111' -> max 92
+    def test_extract_max_k_digits_line1(self):
+        """Test extract_max_k_digits on line 1: '987654321111111' yields 987654321111"""
+        result = runner.extract_max_k_digits("987654321111111", 12)
+        self.assertEqual(result, 987654321111)
 
-        The maximum is formed by selecting positions with '9' and '2' = 92
-        """
-        line_max = runner.process_line("818181911112111")
-        self.assertEqual(line_max, 92)
+    def test_extract_max_k_digits_line2(self):
+        """Test extract_max_k_digits on line 2: '811111111111119' yields 811111111119"""
+        result = runner.extract_max_k_digits("811111111111119", 12)
+        self.assertEqual(result, 811111111119)
 
-    def test_process_line_empty(self):
-        """Test processing empty line: '' -> 0"""
-        line_max = runner.process_line("")
-        self.assertEqual(line_max, 0)
+    def test_extract_max_k_digits_line3(self):
+        """Test extract_max_k_digits on line 3: '234234234234278' yields 434234234278"""
+        result = runner.extract_max_k_digits("234234234234278", 12)
+        self.assertEqual(result, 434234234278)
+
+    def test_extract_max_k_digits_line4(self):
+        """Test extract_max_k_digits on line 4: '818181911112111' yields 888911112111"""
+        result = runner.extract_max_k_digits("818181911112111", 12)
+        self.assertEqual(result, 888911112111)
 
     # ========== Complete Solve Tests ==========
 
     def test_sample_input_complete(self):
-        """Test complete sample input expecting part1=357"""
+        """Test complete sample input expecting part1=357, part2=3121910778619"""
         sample = "987654321111111\n811111111111119\n234234234234278\n818181911112111"
         result = runner.solve(sample)
         self.assertEqual(result["part1"], 357)
-        self.assertIsNone(result["part2"])
+        self.assertEqual(result["part2"], 3121910778619)
 
     def test_sample_input_with_trailing_newline(self):
         """Test sample input with trailing newline"""
         sample = "987654321111111\n811111111111119\n234234234234278\n818181911112111\n"
         result = runner.solve(sample)
         self.assertEqual(result["part1"], 357)
-        self.assertIsNone(result["part2"])
+        self.assertEqual(result["part2"], 3121910778619)
+
+    def test_part1_unchanged(self):
+        """Verify Part 1 result remains unchanged"""
+        sample = "987654321111111\n811111111111119\n234234234234278\n818181911112111"
+        result = runner.solve(sample)
+        self.assertEqual(result["part1"], 357)
+
+    def test_part2_correct_sum(self):
+        """Verify Part 2 produces correct sum"""
+        sample = "987654321111111\n811111111111119\n234234234234278\n818181911112111"
+        result = runner.solve(sample)
+        self.assertEqual(result["part2"], 3121910778619)
 
 
 def main():

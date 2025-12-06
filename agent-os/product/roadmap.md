@@ -47,9 +47,9 @@
 
 ## Phase 3: Day 3 Solutions
 
-10. [ ] Day 3 Part 1 — Implement Part 1 solution in all 4 languages with cross-language validation `M`
+10. [x] Day 3 Part 1 — Implement Part 1 solution in all 4 languages with cross-language validation `M`
 
-11. [ ] Day 3 Part 2 — Implement Part 2 solution in all 4 languages with cross-language validation `M`
+11. [x] Day 3 Part 2 — Implement Part 2 solution in all 4 languages with cross-language validation `M`
 
 12. [ ] Day 3 Analysis — Compare approaches and document language-specific observations `XS`
 
