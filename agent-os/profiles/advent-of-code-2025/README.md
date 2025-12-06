@@ -18,6 +18,7 @@ Each day's puzzle is solved simultaneously in all 5 languages, allowing for:
 - **aoc-testing.md**: Testing strategies for validating solutions
 - **aoc-optimization.md**: Performance optimization guidelines
 - **aoc-privacy.md**: **CRITICAL** - Answer protection and privacy rules (never include real puzzle answers in documentation)
+- **aoc-file-handling.md**: **CRITICAL** - File handling rules (READ-ONLY input files, which files agents can/cannot modify)
 
 ### Agents
 Each language has a specialized solver agent with language-specific expertise:

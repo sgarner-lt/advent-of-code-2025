@@ -606,39 +606,54 @@ All input files for a given day are placed in the `challenges/dayXX/` directory 
 
 ### File Types
 
-1. **Real Puzzle Input**: `input.txt`
+⚠️ **CRITICAL: All files in `challenges/` are READ-ONLY. Never modify them!**
+
+1. **Real Puzzle Input**: `input.txt` (READ-ONLY)
    - This is the actual input from Advent of Code for your account
    - Download from adventofcode.com after starting the puzzle
    - Used by default when running integration tests
+   - **Cannot be recovered if lost or overwritten**
 
-2. **Sample Puzzle Input**: `input-sample.txt`
+2. **Sample Puzzle Input**: `input-sample.txt` (READ-ONLY)
    - The example input provided in the problem statement
    - Typically smaller and easier to debug
    - Used when running with `--sample` flag
+   - Used for validation against expected outputs
 
-3. **Problem Statement**: `problem-statement.txt` (optional)
+3. **Expected Sample Output**: `input-sample-expected-output.txt` (READ-ONLY)
+   - Contains the expected JSON output for sample input
+   - Format: `{"part1": <value>, "part2": <value>}`
+   - Used by verification processes to validate implementations
+   - Values come from the problem statement
+
+4. **Problem Statement**: `problem-statement.txt` (optional, READ-ONLY)
    - Reference copy of the puzzle description
    - Not used by the testing framework
    - Helpful for offline reference
 
-### No Expected Output Files
+### File Protection
 
-Unlike some testing frameworks, we do NOT use expected output files because:
-- Advent of Code requires manual submission through their website
-- Different users get different puzzle inputs
-- The testing framework validates cross-language agreement instead
+**Why files are READ-ONLY:**
+- `input.txt` is your personal puzzle input and cannot be recovered if lost
+- Sample files are reference data for validation
+- Expected output files are used for automated verification
+- Any modification breaks the testing framework
+
+For complete file handling guidelines, see: `agent-os/profiles/advent-of-code-2025/standards/aoc-file-handling.md`
 
 ### Directory Structure Example
 
 ```
 challenges/
   day01/
-    input.txt               # Your real puzzle input
-    input-sample.txt        # Example from problem statement
-    problem-statement.txt   # Optional reference
+    input.txt                        # Your real puzzle input (READ-ONLY)
+    input-sample.txt                 # Example from problem statement (READ-ONLY)
+    input-sample-expected-output.txt # Expected output for validation (READ-ONLY)
+    problem-statement.txt            # Optional reference (READ-ONLY)
   day02/
-    input.txt
-    input-sample.txt
+    input.txt                        # (READ-ONLY)
+    input-sample.txt                 # (READ-ONLY)
+    input-sample-expected-output.txt # (READ-ONLY)
   ...
 ```
 

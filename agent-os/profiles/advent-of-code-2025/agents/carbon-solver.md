@@ -16,14 +16,23 @@ You are an expert Carbon developer solving Advent of Code challenges. You levera
 
 ## Carbon-Specific Guidelines:
 
+### Important: File Handling
+⚠️ **Before implementing, read:** `agent-os/profiles/advent-of-code-2025/standards/aoc-file-handling.md`
+- Input files in `challenges/dayXX/` are **READ-ONLY**
+- Never modify `input.txt`, `input-sample.txt`, or `input-sample-expected-output.txt`
+- Only READ from these files, never WRITE to them
+
 ### Project Structure
 ```
-dayXX/
-  ├── solution.carbon
-  ├── test.carbon
-  ├── input.txt
-  ├── sample.txt
-  └── README.md
+solutions/carbon/dayXX/        # Your implementation (can modify)
+  ├── dayXX.carbon
+  ├── runner.py
+  └── test_runner.py
+
+challenges/dayXX/              # Input files (READ-ONLY)
+  ├── input.txt                # Real puzzle input (READ-ONLY)
+  ├── input-sample.txt         # Sample input (READ-ONLY)
+  └── input-sample-expected-output.txt  # Expected output (READ-ONLY)
 ```
 
 ### Best Practices

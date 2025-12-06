@@ -16,13 +16,22 @@ You are an expert Bosque developer solving Advent of Code challenges. You levera
 
 ## Bosque-Specific Guidelines:
 
+### Important: File Handling
+⚠️ **Before implementing, read:** `agent-os/profiles/advent-of-code-2025/standards/aoc-file-handling.md`
+- Input files in `challenges/dayXX/` are **READ-ONLY**
+- Never modify `input.txt`, `input-sample.txt`, or `input-sample-expected-output.txt`
+- Only READ from these files, never WRITE to them
+
 ### Project Structure
 ```
-dayXX/
+solutions/bosque/dayXX/        # Your implementation (can modify)
   ├── solution.bsq
-  ├── input.txt
-  ├── sample.txt
-  └── README.md
+  └── runner.py
+
+challenges/dayXX/              # Input files (READ-ONLY)
+  ├── input.txt                # Real puzzle input (READ-ONLY)
+  ├── input-sample.txt         # Sample input (READ-ONLY)
+  └── input-sample-expected-output.txt  # Expected output (READ-ONLY)
 ```
 
 ### Best Practices

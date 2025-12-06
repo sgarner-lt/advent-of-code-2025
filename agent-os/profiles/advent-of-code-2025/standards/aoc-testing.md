@@ -1,20 +1,30 @@
 # Advent of Code Testing Standards
 
+## Critical File Handling
+
+⚠️ **IMPORTANT:** Before writing any tests, read the file handling standard:
+- See: `agent-os/profiles/advent-of-code-2025/standards/aoc-file-handling.md`
+- **All files in `challenges/` are READ-ONLY**
+- Never modify `input.txt`, `input-sample.txt`, or `input-sample-expected-output.txt`
+
 ## Test-Driven Approach
 
 1. **Sample Data First**:
    - Always implement and verify sample data from problem description
-   - Keep sample inputs in separate test files
-   - Document expected outputs clearly
+   - Sample inputs are in `challenges/dayXX/input-sample.txt` (READ-ONLY)
+   - Expected outputs are in `challenges/dayXX/input-sample-expected-output.txt` (READ-ONLY)
+   - Document expected outputs clearly in test code
 
-2. **Test Structure**:
+2. **Project Structure**:
    ```
-   tests/
-     day01_test.py (or similar)
-     sample_inputs/
-       day01_sample.txt
-     actual_inputs/
-       day01.txt
+   challenges/dayXX/              # READ-ONLY input files
+     input.txt                    # Real puzzle input
+     input-sample.txt             # Sample from problem
+     input-sample-expected-output.txt  # Expected output
+
+   solutions/<language>/dayXX/    # Your implementation (can modify)
+     src/
+     tests/
    ```
 
 3. **Test Cases to Include**:

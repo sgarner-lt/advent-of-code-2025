@@ -157,11 +157,12 @@ advent-of-code-2025/
 │   ├── carbon/
 │   └── bosque/
 │
-├── challenges/           # Puzzle inputs and test data
+├── challenges/           # Puzzle inputs and test data (READ-ONLY)
 │   └── dayXX/
-│       ├── input.txt            # Real puzzle input
-│       ├── input-sample.txt     # Sample input from problem
-│       └── problem-statement.txt # Optional reference
+│       ├── input.txt                        # Real puzzle input (READ-ONLY)
+│       ├── input-sample.txt                 # Sample input from problem (READ-ONLY)
+│       ├── input-sample-expected-output.txt # Expected output for validation (READ-ONLY)
+│       └── problem-statement.txt            # Optional reference (READ-ONLY)
 │
 ├── solutions/            # Solutions organized by language
 │   ├── rust/dayXX/       # Rust solutions
@@ -184,6 +185,36 @@ advent-of-code-2025/
 │
 └── README.md             # This file
 ```
+
+## Challenge Input Files
+
+### File Structure
+
+Each day's challenge contains several READ-ONLY files:
+
+```
+challenges/dayXX/
+├── input.txt                        # Real puzzle input (READ-ONLY)
+├── input-sample.txt                 # Sample from problem statement (READ-ONLY)
+├── input-sample-expected-output.txt # Expected output (READ-ONLY)
+└── problem-statement.txt            # Problem description (READ-ONLY)
+```
+
+### File Purposes
+
+| File | Purpose | Source | Status |
+|------|---------|--------|--------|
+| `input.txt` | Your personal puzzle input | Downloaded from adventofcode.com | **READ-ONLY** |
+| `input-sample.txt` | Sample input from problem | Copied from problem statement | **READ-ONLY** |
+| `input-sample-expected-output.txt` | Expected sample output | Derived from problem statement | **READ-ONLY** |
+| `problem-statement.txt` | Problem description | Optional reference copy | **READ-ONLY** |
+
+**⚠️ CRITICAL: Never modify files in the `challenges/` directory!**
+
+- These files are reference data for validation
+- `input.txt` is your personal puzzle input and cannot be recovered if lost
+- All testing depends on these files being correct
+- Implementations should only READ these files, never WRITE to them
 
 ## Testing
 
