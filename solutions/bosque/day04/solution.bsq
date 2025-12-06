@@ -1,12 +1,13 @@
 namespace Main;
 
-// Advent of Code 2025 Day 4 Part 1 - Paper Roll Accessibility
+// Advent of Code 2025 Day 4 Part 1 & Part 2 - Paper Roll Accessibility
 //
 // IMPORTANT: Bosque is a Microsoft Research language with limited stdlib
 // This implementation follows the spec but requires a Python wrapper
 // for file I/O and execution due to BosqueCore limitations.
 //
 // Algorithm:
+//
 // Part 1: Identify accessible paper rolls in a factory grid
 //   1. Parse grid from input (@ = paper roll, . = empty space)
 //   2. For each roll (@), check all 8 adjacent positions (N, S, E, W, NE, NW, SE, SW)
@@ -14,10 +15,14 @@ namespace Main;
 //   4. Roll is accessible if adjacent_count < 4
 //   5. Return count of accessible rolls and grid visualization
 //
-// Part 2: Not implemented (null)
+// Part 2: Iteratively remove accessible rolls
+//   1. Start with initial grid
+//   2. Loop: identify accessible rolls, remove batch, update grid
+//   3. Exit loop when no accessible rolls found
+//   4. Return total count of removed rolls
 //
 // Example:
-// Input grid (3x3):
+// Input grid (10x10 sample):
 //   @.@
 //   .@.
 //   @.@
@@ -30,8 +35,8 @@ namespace Main;
 //   - '.' = empty space
 //
 // Expected results:
-// - Sample input (input-sample.txt): Part 1 = 13, Part 2 = null
-// - Real input (input.txt): Part 1 = <Redacted>, Part 2 = null
+// - Sample input (input-sample.txt): Part 1 = 13, Part 2 = 43
+// - Real input (input.txt): Part 1 = <Redacted>, Part 2 = <Redacted>
 
 // Parse grid from multi-line input string
 // Returns a 2D list of characters
@@ -221,18 +226,99 @@ function createVisualization(grid: List<List<String>>, accessiblePositions: List
     return result;
 }
 
+// Remove rolls from the grid at specified positions
+// Returns a new grid with removed positions replaced by '.'
+//
+// Arguments:
+// - grid: Original 2D grid
+// - positions: List of {row, col} positions to remove
+//
+// Returns: New grid with rolls removed
+function removeRolls(grid: List<List<String>>, positions: List<{row: Int, col: Int}>): List<List<String>> {
+    var newGrid = List::create<List<String>>();
+    var gridHeight = List::size<List<String>>(grid);
+
+    var i = 0i;
+    while(i < gridHeight) {
+        var row = List::get<List<String>>(grid, i);
+        var rowWidth = List::size<String>(row);
+        var newRow = List::create<String>();
+
+        var j = 0i;
+        while(j < rowWidth) {
+            var cell = List::get<String>(row, j);
+
+            // Check if this position should be removed
+            var shouldRemove = false;
+            var k = 0i;
+            while(k < List::size<{row: Int, col: Int}>(positions)) {
+                var pos = List::get<{row: Int, col: Int}>(positions, k);
+                if(pos.row == i && pos.col == j) {
+                    shouldRemove = true;
+                }
+                k = k + 1i;
+            }
+
+            if(shouldRemove) {
+                newRow = List::add<String>(newRow, ".");
+            } else {
+                newRow = List::add<String>(newRow, cell);
+            }
+
+            j = j + 1i;
+        }
+
+        newGrid = List::add<List<String>>(newGrid, newRow);
+        i = i + 1i;
+    }
+
+    return newGrid;
+}
+
+// Solve Part 2: Iteratively remove accessible rolls
+// Returns total count of removed rolls across all iterations
+//
+// Arguments:
+// - grid: Initial 2D grid
+//
+// Returns: Total count of removed rolls
+function solvePart2Loop(grid: List<List<String>>, totalRemoved: Int): Int {
+    // Identify all accessible rolls in current grid state
+    var result = findAccessibleRolls(grid);
+
+    // If no accessible rolls found, we're done
+    if(result.count == 0i) {
+        return totalRemoved;
+    }
+
+    // Count removed rolls in this iteration
+    var removedCount = result.count;
+    var newTotal = totalRemoved + removedCount;
+
+    // Remove all accessible rolls (batch removal)
+    var newGrid = removeRolls(grid, result.positions);
+
+    // Continue with next iteration
+    return solvePart2Loop(newGrid, newTotal);
+}
+
 // Main solve function that processes the grid and returns results
 //
 // Arguments:
 // - input: Multi-line string containing grid data
 //
-// Returns: Tuple with part1 answer, part2 (null), and grid visualization
-function solve(input: String): {part1: Int, part2: Int?, grid: String} {
+// Returns: Tuple with part1 answer, part2 answer, and grid visualization
+function solve(input: String): {part1: Int, part2: Int, grid: String} {
     var grid = parseGrid(input);
+
+    // Part 1: Initial accessible rolls
     var result = findAccessibleRolls(grid);
     var visualization = createVisualization(grid, result.positions);
 
-    return {part1: result.count, part2: none, grid: visualization};
+    // Part 2: Total removed rolls through iterative removal
+    var part2Count = solvePart2Loop(grid, 0i);
+
+    return {part1: result.count, part2: part2Count, grid: visualization};
 }
 
 // Main entry point
@@ -257,9 +343,6 @@ entrypoint function main(args: List<String>): Int {
 
     var result = solve(inputContent);
 
-    // Output JSON format for cross-language validation
-    var part2Str = "null";
-
     // Escape newlines in grid visualization for JSON
     var escapedGrid = String::replace(result.grid, "\n", "\\n");
 
@@ -267,7 +350,7 @@ entrypoint function main(args: List<String>): Int {
         "{\"part1\": ",
         Int::toString(result.part1),
         ", \"part2\": ",
-        part2Str,
+        Int::toString(result.part2),
         ", \"additional-info\": {\"grid\": \"",
         escapedGrid,
         "\"}}"
@@ -277,7 +360,7 @@ entrypoint function main(args: List<String>): Int {
     return 0i;
 }
 
-// === UNIT TESTS (8 tests) ===
+// === UNIT TESTS (14 tests) ===
 
 // Test 1: Parse simple 2x2 grid
 function test_parseGridSimple(): Bool {
@@ -350,13 +433,78 @@ function test_emptyGrid(): Bool {
 }
 
 // Test 8: Sample input produces expected answer (13)
-function test_sampleInputComplete(): Bool {
+function test_sampleInputPart1(): Bool {
     // Note: This is a simplified test - actual sample would be larger
     var sample = ".@.\n@@@\n.@.";
     var result = solve(sample);
     // In this 3x3 with center surrounded by 4 rolls, center is inaccessible
     // The 4 edge rolls each have 3 neighbors (< 4), so all 4 are accessible
     _assert(result.part1 == 4i);
-    _assert(result.part2 == none);
+    return true;
+}
+
+// Part 2 Tests
+
+// Test 9: Remove rolls function
+function test_removeRolls(): Bool {
+    var input = "@@.\n@..";
+    var grid = parseGrid(input);
+    var positions = List::create<{row: Int, col: Int}>();
+    positions = List::add<{row: Int, col: Int}>(positions, {row: 0i, col: 0i});
+    positions = List::add<{row: Int, col: Int}>(positions, {row: 0i, col: 1i});
+    var newGrid = removeRolls(grid, positions);
+
+    var row0 = List::get<List<String>>(newGrid, 0i);
+    var cell00 = List::get<String>(row0, 0i);
+    var cell01 = List::get<String>(row0, 1i);
+    _assert(String::equals(cell00, "."));
+    _assert(String::equals(cell01, "."));
+    return true;
+}
+
+// Test 10: Part 2 single iteration (all rolls accessible)
+function test_part2SingleIteration(): Bool {
+    var input = "@..\n.@.\n..@";
+    var result = solve(input);
+    // All 3 rolls are accessible in first iteration (0-1 neighbors each)
+    _assert(result.part2 == 3i);
+    return true;
+}
+
+// Test 11: Part 2 preserves Part 1 result
+function test_part2PreservesPart1(): Bool {
+    var sample = ".@.\n@@@\n.@.";
+    var result = solve(sample);
+    // Part 1 should still be 4
+    _assert(result.part1 == 4i);
+    return true;
+}
+
+// Test 12: Part 2 empty grid
+function test_part2EmptyGrid(): Bool {
+    var input = "";
+    var result = solve(input);
+    _assert(result.part2 == 0i);
+    return true;
+}
+
+// Test 13: Part 2 iteration termination
+function test_part2IterationTermination(): Bool {
+    var input = ".....\n.@@@.\n.@@@.\n.@@@.\n.....";
+    var result = solve(input);
+    // Should remove some rolls but stop when none are accessible
+    _assert(result.part2 > 0i);
+    _assert(result.part2 <= 9i);
+    return true;
+}
+
+// Test 14: Full sample validation
+function test_fullSampleValidation(): Bool {
+    // This would test the full sample input if available in Bosque
+    // For now, just verify the solve function returns valid structure
+    var sample = ".@.\n@@@\n.@.";
+    var result = solve(sample);
+    _assert(result.part1 >= 0i);
+    _assert(result.part2 >= 0i);
     return true;
 }

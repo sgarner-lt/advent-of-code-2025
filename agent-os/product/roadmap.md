@@ -64,7 +64,7 @@
 
 13. [x] Day 4 Part 1 — Implement Part 1 solution in all 4 languages with cross-language validation `M`
 
-14. [ ] Day 4 Part 2 — Implement Part 2 solution in all 4 languages with cross-language validation `M`
+14. [x] Day 4 Part 2 — Implement Part 2 solution in all 4 languages with cross-language validation `M`
 
 15. [ ] Day 4 Analysis — Compare approaches and document language-specific observations `XS`
 

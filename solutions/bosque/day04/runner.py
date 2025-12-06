@@ -16,22 +16,31 @@ This wrapper:
 The algorithm logic here mirrors the Bosque implementation in solution.bsq
 
 Algorithm:
+
+Part 1:
 - Parse input grid where '@' represents paper rolls and '.' represents empty space
 - For each paper roll position, count adjacent rolls in all 8 directions (N, S, E, W, NE, NW, SE, SW)
 - A roll is accessible if it has fewer than 4 adjacent rolls (count < 4)
 - Count total accessible rolls
 - Generate grid visualization: 'x' for accessible, '@' for inaccessible, '.' for empty
 
+Part 2:
+- Start with initial grid
+- Iterate until no accessible rolls remain:
+  1. Identify all accessible rolls (< 4 adjacent)
+  2. Remove all identified rolls as a batch (replace with '.')
+  3. Update grid state
+  4. Count removed rolls
+- Return total count of removed rolls across all iterations
+
 Example:
-- Input grid:
-  ..@@.@@@@.
-  @@@.@.@.@@
-  (10x10 grid)
-- Expected output: {"part1": 13, "part2": null, "additional-info": {"grid": "..."}}
+- Input grid (10x10 sample)
+- Expected output: {"part1": 13, "part2": 43, "additional-info": {"grid": "..."}}
 """
 
 import sys
 import json
+import copy
 
 
 def parse_grid(input_text):
@@ -155,6 +164,65 @@ def create_visualization(grid, accessible):
     return '\n'.join(result)
 
 
+def remove_rolls(grid, positions):
+    """
+    Remove rolls from the grid at specified positions.
+
+    Args:
+        grid: 2D list of characters
+        positions: List of (row, col) tuples to remove
+
+    Returns:
+        New grid with removed positions replaced by '.'
+
+    Mirrors: function removeRolls(grid: List<List<Char>>, positions: List<Position>): List<List<Char>>
+    """
+    # Create a deep copy to avoid modifying original
+    new_grid = copy.deepcopy(grid)
+
+    for row, col in positions:
+        new_grid[row][col] = '.'
+
+    return new_grid
+
+
+def solve_part2(input_text):
+    """
+    Solve Part 2: Iteratively remove accessible rolls.
+
+    Args:
+        input_text: Multi-line string containing grid
+
+    Returns:
+        Integer count of total removed rolls
+
+    Mirrors: function solvePart2Loop(grid: List<List<Char>>, totalRemoved: Int): Int
+    """
+    grid = parse_grid(input_text)
+
+    if not grid:
+        return 0
+
+    total_removed = 0
+
+    while True:
+        # Identify all accessible rolls in current grid state
+        accessible = identify_accessible_rolls(grid)
+
+        # If no accessible rolls found, we're done
+        if not accessible:
+            break
+
+        # Count removed rolls in this iteration
+        removed_count = len(accessible)
+        total_removed += removed_count
+
+        # Remove all accessible rolls (batch removal)
+        grid = remove_rolls(grid, accessible)
+
+    return total_removed
+
+
 def solve(input_text):
     """
     Main solve function that processes grid and returns count with visualization.
@@ -163,22 +231,26 @@ def solve(input_text):
         input_text: Multi-line string containing grid
 
     Returns:
-        Dictionary with 'part1' count, 'part2' null, and 'additional-info' grid
+        Dictionary with 'part1' count, 'part2' count, and 'additional-info' grid
 
-    Mirrors: function solve(input: String): {part1: Int, part2: Option<Int>, additionalInfo: {grid: String}}
+    Mirrors: function solve(input: String): {part1: Int, part2: Int, additionalInfo: {grid: String}}
     """
     grid = parse_grid(input_text)
 
     if not grid:
-        return {"part1": 0, "part2": None, "additional-info": {"grid": ""}}
+        return {"part1": 0, "part2": 0, "additional-info": {"grid": ""}}
 
+    # Part 1: Initial accessible rolls
     accessible = identify_accessible_rolls(grid)
     count = len(accessible)
     visualization = create_visualization(grid, accessible)
 
+    # Part 2: Total removed rolls through iterative removal
+    part2_count = solve_part2(input_text)
+
     return {
         "part1": count,
-        "part2": None,
+        "part2": part2_count,
         "additional-info": {
             "grid": visualization
         }

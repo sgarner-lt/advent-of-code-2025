@@ -8,12 +8,13 @@ fn main() {
         .expect("Failed to read from stdin");
 
     let (part1, grid_viz) = solve(&input);
+    let part2 = solve_part2(&input);
 
     // Output JSON format with grid visualization
     let escaped_grid = grid_viz.replace('\n', "\\n");
     println!(
-        "{{\"part1\": {}, \"part2\": null, \"additional-info\": {{\"grid\": \"{}\"}}}}",
-        part1, escaped_grid
+        "{{\"part1\": {}, \"part2\": {}, \"additional-info\": {{\"grid\": \"{}\"}}}}",
+        part1, part2, escaped_grid
     );
 }
 
@@ -99,6 +100,49 @@ fn create_visualization(grid: &[Vec<char>], accessible: &[(usize, usize)]) -> St
     }
 
     result.join("\n")
+}
+
+/// Remove rolls from the grid at specified positions
+/// Returns a new grid with removed positions replaced by '.'
+fn remove_rolls(grid: &[Vec<char>], positions: &[(usize, usize)]) -> Vec<Vec<char>> {
+    let mut new_grid = grid.to_vec();
+
+    for &(row, col) in positions {
+        new_grid[row][col] = '.';
+    }
+
+    new_grid
+}
+
+/// Solve Part 2: Iteratively remove accessible rolls
+/// Returns total count of removed rolls across all iterations
+fn solve_part2(input: &str) -> usize {
+    let mut grid = parse_grid(input);
+
+    if grid.is_empty() {
+        return 0;
+    }
+
+    let mut total_removed = 0;
+
+    loop {
+        // Identify all accessible rolls in current grid state
+        let accessible = identify_accessible_rolls(&grid);
+
+        // If no accessible rolls found, we're done
+        if accessible.is_empty() {
+            break;
+        }
+
+        // Count removed rolls in this iteration
+        let removed_count = accessible.len();
+        total_removed += removed_count;
+
+        // Remove all accessible rolls (batch removal)
+        grid = remove_rolls(&grid, &accessible);
+    }
+
+    total_removed
 }
 
 /// Solve the puzzle: count accessible rolls and create visualization
@@ -214,5 +258,85 @@ mod tests {
         let (count, viz) = solve(input);
         assert_eq!(count, 0);
         assert_eq!(viz, "");
+    }
+
+    // Part 2 Tests
+
+    #[test]
+    fn test_part2_sample_input_total() {
+        let input = "..@@.@@@@.
+@@@.@.@.@@
+@@@@@.@.@@
+@.@@@@..@.
+@@.@@@@.@@
+.@@@@@@@.@
+.@.@.@.@@@
+@.@@@.@@@@
+.@@@@@@@@.
+@.@.@@@.@.";
+        let total = solve_part2(input);
+        assert_eq!(total, 43);
+    }
+
+    #[test]
+    fn test_part2_preserves_part1() {
+        let input = "..@@.@@@@.
+@@@.@.@.@@
+@@@@@.@.@@
+@.@@@@..@.
+@@.@@@@.@@
+.@@@@@@@.@
+.@.@.@.@@@
+@.@@@.@@@@
+.@@@@@@@@.
+@.@.@@@.@.";
+        let (part1, _) = solve(input);
+        assert_eq!(part1, 13);
+    }
+
+    #[test]
+    fn test_part2_empty_grid() {
+        let input = "";
+        let total = solve_part2(input);
+        assert_eq!(total, 0);
+    }
+
+    #[test]
+    fn test_remove_rolls() {
+        let grid = vec![
+            vec!['@', '@', '.'],
+            vec!['@', '.', '.'],
+        ];
+        let positions = vec![(0, 0), (0, 1)];
+        let new_grid = remove_rolls(&grid, &positions);
+
+        assert_eq!(new_grid[0][0], '.');
+        assert_eq!(new_grid[0][1], '.');
+        assert_eq!(new_grid[1][0], '@'); // Unchanged
+    }
+
+    #[test]
+    fn test_part2_single_iteration() {
+        // Grid where all rolls are accessible (< 4 adjacent)
+        let input = "@..\n.@.\n..@";
+        let total = solve_part2(input);
+        // All 3 rolls are accessible in first iteration (0-1 neighbors each)
+        assert_eq!(total, 3);
+    }
+
+    #[test]
+    fn test_part2_no_accessible_rolls() {
+        // Grid where center roll is protected by exactly 4 neighbors
+        // Make a 5x5 grid with a protected roll at (2,2) that has exactly 4 adjacent
+        let input = ".....\n.@@@.\n.@@@.\n.@@@.\n.....";
+        let grid = parse_grid(input);
+        // Center roll at (2,2) should have exactly 8 neighbors
+        // Corner rolls like (1,1) have 3 neighbors, edges have 5
+        // After first iteration, some outer rolls are removed
+        // Verify iteration eventually stops
+        let total = solve_part2(input);
+        // Should remove rolls but stop when none are accessible
+        assert!(total > 0);
+        assert!(total <= 9); // Max 9 rolls in grid
     }
 }

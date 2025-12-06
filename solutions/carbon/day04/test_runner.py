@@ -10,7 +10,7 @@ import os
 # Add current directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from runner import parse_grid, count_adjacent_rolls, identify_accessible_rolls, create_visualization, solve
+from runner import parse_grid, count_adjacent_rolls, identify_accessible_rolls, create_visualization, remove_rolls, solve_part2, solve
 
 
 class TestDay04Carbon(unittest.TestCase):
@@ -99,6 +99,70 @@ class TestDay04Carbon(unittest.TestCase):
         result = solve(input_text)
         self.assertEqual(result['part1'], 0)
         self.assertEqual(result['additional-info']['grid'], "")
+
+    # Part 2 Tests
+
+    def test_part2_sample_input(self):
+        """Test Part 2 with sample input produces total of 43"""
+        input_text = """..@@.@@@@.
+@@@.@.@.@@
+@@@@@.@.@@
+@.@@@@..@.
+@@.@@@@.@@
+.@@@@@@@.@
+.@.@.@.@@@
+@.@@@.@@@@
+.@@@@@@@@.
+@.@.@@@.@."""
+        total = solve_part2(input_text)
+        self.assertEqual(total, 43)
+
+    def test_part2_preserves_part1(self):
+        """Test Part 2 doesn't affect Part 1 result"""
+        input_text = """..@@.@@@@.
+@@@.@.@.@@
+@@@@@.@.@@
+@.@@@@..@.
+@@.@@@@.@@
+.@@@@@@@.@
+.@.@.@.@@@
+@.@@@.@@@@
+.@@@@@@@@.
+@.@.@@@.@."""
+        result = solve(input_text)
+        self.assertEqual(result['part1'], 13)
+        self.assertEqual(result['part2'], 43)
+
+    def test_part2_empty_grid(self):
+        """Test Part 2 with empty grid"""
+        input_text = ""
+        total = solve_part2(input_text)
+        self.assertEqual(total, 0)
+
+    def test_remove_rolls(self):
+        """Test remove_rolls function"""
+        grid = [['@', '@', '.'], ['@', '.', '.']]
+        positions = [(0, 0), (0, 1)]
+        new_grid = remove_rolls(grid, positions)
+
+        self.assertEqual(new_grid[0][0], '.')
+        self.assertEqual(new_grid[0][1], '.')
+        self.assertEqual(new_grid[1][0], '@')  # Unchanged
+
+    def test_part2_single_iteration(self):
+        """Test Part 2 with all rolls accessible in first iteration"""
+        input_text = "@..\n.@.\n..@"
+        total = solve_part2(input_text)
+        # All 3 rolls are accessible in first iteration (0-1 neighbors each)
+        self.assertEqual(total, 3)
+
+    def test_part2_iteration_termination(self):
+        """Test Part 2 iteration stops when no accessible rolls remain"""
+        input_text = ".....\n.@@@.\n.@@@.\n.@@@.\n....."
+        total = solve_part2(input_text)
+        # Should remove some rolls but stop when none are accessible
+        self.assertGreater(total, 0)
+        self.assertLessEqual(total, 9)
 
 
 if __name__ == '__main__':

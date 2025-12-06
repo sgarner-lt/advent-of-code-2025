@@ -12,7 +12,8 @@ pub fn main() {
     Ok(content) -> {
       case solve(content) {
         Ok(#(count, grid_viz)) -> {
-          let json = build_json(count, grid_viz)
+          let part2 = solve_part2(content)
+          let json = build_json(count, part2, grid_viz)
           io.println(json)
         }
         Error(err) -> io.println("Error solving: " <> err)
@@ -141,6 +142,57 @@ pub fn create_visualization(
   |> string.join("\n")
 }
 
+// Remove rolls from the grid at specified positions
+// Returns a new grid with removed positions replaced by "."
+pub fn remove_rolls(
+  grid: List(List(String)),
+  positions: List(#(Int, Int)),
+) -> List(List(String)) {
+  grid
+  |> list.index_map(fn(line, row) {
+    line
+    |> list.index_map(fn(cell, col) {
+      case list.contains(positions, #(row, col)) {
+        True -> "."
+        False -> cell
+      }
+    })
+  })
+}
+
+// Solve Part 2: Iteratively remove accessible rolls
+// Returns total count of removed rolls across all iterations
+pub fn solve_part2(input: String) -> Int {
+  let grid = parse_grid(input)
+
+  case list.is_empty(grid) {
+    True -> 0
+    False -> solve_part2_loop(grid, 0)
+  }
+}
+
+// Helper function for Part 2 iteration loop
+fn solve_part2_loop(grid: List(List(String)), total_removed: Int) -> Int {
+  // Identify all accessible rolls in current grid state
+  let accessible = identify_accessible_rolls(grid)
+
+  // If no accessible rolls found, we're done
+  case list.is_empty(accessible) {
+    True -> total_removed
+    False -> {
+      // Count removed rolls in this iteration
+      let removed_count = list.length(accessible)
+      let new_total = total_removed + removed_count
+
+      // Remove all accessible rolls (batch removal)
+      let new_grid = remove_rolls(grid, accessible)
+
+      // Continue with next iteration
+      solve_part2_loop(new_grid, new_total)
+    }
+  }
+}
+
 // Solve the puzzle: count accessible rolls and create visualization
 pub fn solve(input: String) -> Result(#(Int, String), String) {
   let grid = parse_grid(input)
@@ -157,11 +209,13 @@ pub fn solve(input: String) -> Result(#(Int, String), String) {
 }
 
 // Build JSON output string with escaped newlines
-fn build_json(count: Int, grid: String) -> String {
+fn build_json(count: Int, part2: Int, grid: String) -> String {
   let escaped_grid = string.replace(grid, "\n", "\\n")
   "{\"part1\": "
   <> int.to_string(count)
-  <> ", \"part2\": null, \"additional-info\": {\"grid\": \""
+  <> ", \"part2\": "
+  <> int.to_string(part2)
+  <> ", \"additional-info\": {\"grid\": \""
   <> escaped_grid
   <> "\"}}"
 }
