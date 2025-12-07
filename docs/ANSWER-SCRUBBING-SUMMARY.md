@@ -22,8 +22,8 @@
 ### 3. Scrubbed All Real Answers
 
 Replaced all instances of real puzzle answers with "REDACTED":
-- Part 1: ~~1097~~ → **REDACTED**
-- Part 2: ~~7101~~ → **REDACTED**
+- Part 1: ~~1234~~ → **REDACTED**
+- Part 2: ~~5678~~ → **REDACTED**
 
 **Files Updated:**
 - `agent-os/specs/2025-12-04-day1-part2-cross-language/verifications/final-verification.md`
@@ -41,7 +41,7 @@ Replaced all instances of real puzzle answers with "REDACTED":
 
 ### 4. Verification
 
-✅ **Confirmed:** No instances of real answers (1097 or 7101) remain in documentation or code
+✅ **Confirmed:** No instances of real answers (<real_answer_part1> or <real_answer_part2>) remain in documentation or code
 ✅ **Sample answers preserved:** Sample input answers (part1: 3, part2: 6) are still documented
 ✅ **Code still works:** Actual implementations calculate answers from input files
 
@@ -65,17 +65,17 @@ The actual implementations in Rust, Gleam, Roc, Carbon, and Bosque still calcula
 
 ### ❌ Real Puzzle Answers in Documentation
 ```markdown
-Expected: {"part1": 1097, "part2": 7101}  // ❌ DON'T DO THIS
+Expected: {"part1": <real_answer>, "part2": <real_answer>}  // ❌ DON'T DO THIS
 ```
 
 ### ❌ Hardcoded Real Answers in Tests
 ```rust
-assert_eq!(solve("input.txt"), (1097, 7101));  // ❌ DON'T DO THIS
+assert_eq!(solve("input.txt"), (<real_answer>, <real_answer>));  // ❌ DON'T DO THIS
 ```
 
 ### ❌ Comments Revealing Real Answers
 ```
-// The answer is 1097  // ❌ DON'T DO THIS
+// The answer is <real_answer>  // ❌ DON'T DO THIS
 ```
 
 ## Future Work

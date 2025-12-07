@@ -2,8 +2,26 @@
 """
 Carbon Day 01 Runner Wrapper
 
-This is a temporary wrapper to simulate Carbon execution until Carbon's
-standard library matures to support stdin and I/O operations.
+⚠️ DEPRECATED: This Python wrapper is no longer used.
+
+As of December 2025, Day 1 uses a real Carbon implementation:
+- Source: day01_simple.carbon
+- Execution: Compiled with Bazel inside Docker/Podman container
+- Runner: scripts/runners/run_carbon.sh
+
+This file is kept for historical reference only. The runner script now
+executes actual Carbon code instead of using this Python wrapper.
+
+See:
+- docs/languages/carbon.md for container setup
+- solutions/carbon/day01/README.md for implementation details
+
+---
+
+LEGACY DOCUMENTATION (No Longer Applicable):
+
+This was a temporary wrapper to simulate Carbon execution until Carbon's
+standard library matured to support stdin and I/O operations.
 
 The Carbon implementation in day01.carbon contains the correct algorithm,
 but cannot execute independently due to Carbon's experimental state.

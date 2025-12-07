@@ -2,6 +2,22 @@
 """
 Carbon Day 04 Runner Wrapper
 
+⚠️ DEPRECATED: Python wrapper approach is deprecated.
+
+This implementation still uses a Python wrapper instead of real Carbon code.
+Day 1 has been migrated to use real Carbon with container execution, and
+this day should be migrated to follow the same pattern.
+
+Migration reference:
+- See solutions/carbon/day01/ for real Carbon implementation
+- Use Bazel build system inside Docker/Podman container
+- Character-based I/O with Core library
+- See docs/languages/carbon.md for setup details
+
+---
+
+CURRENT STATUS (Needs Migration):
+
 This is a temporary wrapper to simulate Carbon execution until Carbon's
 standard library matures to support stdin and I/O operations.
 

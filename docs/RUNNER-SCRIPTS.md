@@ -53,5 +53,5 @@ If a runner script fails:
 2. Verify the script is executable: `chmod +x scripts/runners/run_*.sh`
 3. Check the error output - scripts provide detailed error messages
 4. For Roc: Verify `~/.local/bin/roc` exists
-5. For Carbon: Verify `~/.local/carbon/carbon-lang` exists
+5. For Carbon: Verify Podman/Docker is running and `carbon-aoc:day1` image exists: `podman images | grep carbon-aoc`
 6. For Bosque: Verify Podman is running: `podman machine info`

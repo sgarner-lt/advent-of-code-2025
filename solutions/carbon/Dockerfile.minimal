@@ -1,0 +1,52 @@
+# Minimal Carbon Language Environment for Day 1
+# Builds Carbon from source in Ubuntu 22.04
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install prerequisites
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    python3 \
+    wget \
+    ca-certificates \
+    gnupg \
+    software-properties-common \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add LLVM 19 repository
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - \
+    && add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" \
+    && apt-get update
+
+# Install Clang 19
+RUN apt-get install -y \
+    clang-19 \
+    lld-19 \
+    libc++-19-dev \
+    libc++abi-19-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Clang 19 as default
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-19 100 \
+    && update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-19 100 \
+    && update-alternatives --install /usr/bin/lld lld /usr/bin/lld-19 100
+
+# Clone Carbon (shallow clone to save space)
+WORKDIR /opt
+RUN git clone --depth 1 https://github.com/carbon-language/carbon-lang.git
+
+# Build just what we need with resource constraints
+WORKDIR /opt/carbon-lang
+# Limit parallel jobs to avoid OOM (3.5GB for 4GB machine)
+RUN ./scripts/run_bazelisk.py build --jobs=2 --local_ram_resources=3500 //toolchain:carbon
+
+# Create a simpler wrapper script
+RUN echo '#!/bin/bash\n/opt/carbon-lang/bazel-bin/toolchain/carbon "$@"' > /usr/local/bin/carbon \
+    && chmod +x /usr/local/bin/carbon
+
+WORKDIR /workspace
+
+CMD ["/bin/bash"]

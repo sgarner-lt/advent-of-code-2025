@@ -203,26 +203,65 @@ json = "{\"part1\": \(part1Str), \"part2\": null}"
 
 ### Carbon (Experimental)
 
-Carbon's standard library is still in development. Use string formatting:
+Carbon is an experimental language with limited standard library support. Solutions run inside a Docker/Podman container that includes the Carbon toolchain and Bazel build system. Output JSON character-by-character using the Core library:
 
 ```carbon
-package Advent api;
+import Core library "io";
 
-fn Main() -> i32 {
-    let part1: i64 = 12345;
-    let part2: i64 = 67890;
+fn PrintIntNoNewline(n_val: i32) {
+  var n: i32 = n_val;
+  if (n < 0) {
+    Core.PrintChar('-');
+    n = -n;
+  }
+  var pow10: i32 = 1;
+  while (n / 10 >= pow10) {
+    pow10 = pow10 * 10;
+  }
+  while (pow10 != 0) {
+    let d: i32 = n / pow10;
+    Core.PrintChar(((d + 0x30) as u8) as char);
+    n = n % pow10;
+    pow10 = pow10 / 10;
+  }
+}
 
-    // String formatting to construct JSON
-    Print("{\"part1\": {0}, \"part2\": {1}}", part1, part2);
+fn Run() {
+  var part1: i32 = 12345;
+  var part2: i32 = 67890;
 
-    return 0;
+  // Print JSON character-by-character
+  Core.PrintChar('{');
+  Core.PrintChar('"');
+  Core.PrintChar('p');
+  Core.PrintChar('a');
+  Core.PrintChar('r');
+  Core.PrintChar('t');
+  Core.PrintChar('1');
+  Core.PrintChar('"');
+  Core.PrintChar(':');
+  Core.PrintChar(' ');
+  PrintIntNoNewline(part1);
+  Core.PrintChar(',');
+  Core.PrintChar(' ');
+  Core.PrintChar('"');
+  Core.PrintChar('p');
+  Core.PrintChar('a');
+  Core.PrintChar('r');
+  Core.PrintChar('t');
+  Core.PrintChar('2');
+  Core.PrintChar('"');
+  Core.PrintChar(':');
+  Core.PrintChar(' ');
+  PrintIntNoNewline(part2);
+  Core.PrintChar('}');
+  Core.PrintChar('\n');
 }
 ```
 
-For null values:
-```carbon
-Print("{\"part1\": null, \"part2\": {0}}", part2);
-```
+**Note:** Carbon has no string type or format functions. All output must be character-by-character using hex codes (e.g., `0x30` for '0', `0x7B` for '{'}). The `Run()` function is the entry point. For null values, you would print the literal text "null" character-by-character instead of calling `PrintIntNoNewline`.
+
+**Container Execution:** Carbon solutions are compiled with Bazel inside a container and executed automatically by the `run_carbon.sh` script. See [docs/languages/carbon.md](languages/carbon.md) for details on the containerized build process.
 
 ### Bosque
 

@@ -1,8 +1,23 @@
 #!/bin/bash
 
 # Carbon Language Toolchain Installation Script
-# Installs Carbon experimental version by building from source on macOS
-# This script is idempotent and safe to run multiple times
+# ⚠️ DEPRECATED: This script installs Carbon locally on macOS
+#
+# As of December 2025, the preferred method is using Docker/Podman containers.
+# Container benefits:
+# - Consistent environment across all platforms
+# - No manual installation of LLVM, Bazel, etc.
+# - Isolated from host system
+# - Reproducible builds
+#
+# To use the container approach instead:
+#   1. Install Docker or Podman
+#   2. Build the container: cd solutions/carbon && podman build -t carbon-aoc:day1 -f Dockerfile.minimal .
+#   3. Run solutions: ./scripts/runners/run_carbon.sh <day> <input>
+#
+# See docs/languages/carbon.md for detailed container setup instructions.
+#
+# This script remains for backward compatibility and local development scenarios.
 
 set -euo pipefail
 
@@ -24,6 +39,13 @@ trap cleanup_on_exit EXIT
 
 # Main installation function
 main() {
+    log_warn "╔════════════════════════════════════════════════════════════════╗"
+    log_warn "║  DEPRECATION NOTICE: Container-based approach is preferred    ║"
+    log_warn "║  This script installs Carbon locally on macOS (legacy)        ║"
+    log_warn "║  See docs/languages/carbon.md for container setup instead     ║"
+    log_warn "╚════════════════════════════════════════════════════════════════╝"
+    log_warn ""
+
     log_info "Starting Carbon toolchain installation..."
     log_warn "Note: Carbon is an experimental language and build may take significant time"
 

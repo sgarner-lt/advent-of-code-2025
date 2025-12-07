@@ -1,176 +1,210 @@
 # Carbon Day 02 Implementation
 
+## ✅ Real Carbon Implementation
+
+**This implementation uses real Carbon code compiled with Bazel in a container.**
+
+This Day 02 implementation follows the containerized approach established in Day 01:
+- Direct Carbon source code ([day02_simple.carbon](day02_simple.carbon))
+- Bazel build system inside Docker/Podman container
+- Character-based I/O with Core library
+- No Python dependencies for execution
+
+---
+
 ## Overview
 
-This directory contains the Carbon implementation for Advent of Code 2025 Day 2 Part 1.
+This directory contains a **real Carbon implementation** for Advent of Code 2025 Day 2: Invalid Product IDs. The solution is written in pure Carbon and compiled using Bazel inside a container.
 
 ## Implementation Status
 
-**Status:** COMPLETE
+**Status:** COMPLETE (Parts 1 & 2)
 
-All tasks from Task Group 5 have been implemented:
-- 24 focused unit tests (5.2 + 5.3)
-  - 8 pattern detection tests
-  - 8 range processing tests
-  - 4 helper function tests
-  - 3 integration tests
-  - 1 verification test
-- Invalid ID detection algorithm (5.5)
-- Range parsing (5.6)
-- Range processing (5.7)
-- JSON output format (5.8)
-- All tests verified passing (5.9)
+- ✅ Real Carbon implementation (no Python wrapper)
+- ✅ Character-based I/O using Core library
+- ✅ Integer-based digit extraction (no arrays needed)
+- ✅ Pattern detection algorithm for Part 1 (pattern repeated exactly twice)
+- ✅ Pattern detection algorithm for Part 2 (pattern repeated 2+ times)
+- ✅ Range parsing from stdin
+- ✅ JSON output format
+- ✅ Containerized build and execution
+- ✅ Validated against sample and real inputs
 
 ## Files
 
-- `day02.carbon` - Main Carbon implementation with algorithm logic and test function declarations
-- `runner.py` - Python wrapper for file I/O and execution (required due to Carbon's experimental state)
-- `test_carbon_day02.py` - Unit test suite (24 tests)
+- [day02_simple.carbon](day02_simple.carbon) - Real Carbon implementation (202 lines)
+- [runner.py](runner.py) - Legacy Python wrapper (DEPRECATED, kept for reference)
 - `README.md` - This file
-
-## Carbon Language Limitations
-
-Carbon is an experimental language (as of December 2025) with the following limitations:
-
-1. **No Standard Library I/O**: Carbon lacks mature file I/O capabilities
-2. **Limited String Operations**: No built-in string slicing or substring functions
-3. **No Testing Framework**: No official test runner or assertion library
-4. **No Print Functions**: Output requires external interop
-
-## Workaround Strategy
-
-Due to Carbon's experimental state, we use a **Python wrapper approach**:
-
-1. The Carbon file (`day02.carbon`) contains the complete algorithm structure and documentation
-2. All 24 unit tests are declared as Carbon functions (structure only)
-3. A Python wrapper (`runner.py`) provides:
-   - File I/O (reading input from stdin)
-   - String operations (slicing, comparison)
-   - Range parsing (comma-separated ranges)
-   - Pattern detection algorithm
-   - JSON output formatting
-   - Test execution harness
-
-The Python wrapper implements the **exact same algorithm** as documented in the Carbon code, ensuring algorithmic consistency.
 
 ## Algorithm
 
-### Pattern Detection
+### Part 1: Pattern Repeated Exactly Twice
 
 An invalid product ID is one that can be split exactly in half with both halves being equal.
 
 **Algorithm:**
-1. Check if the string length is even (required for exact half split)
-2. Split the string exactly in half
-3. Compare both halves - if equal, the ID is invalid
+1. Count digits in the number
+2. Check if the digit count is even (required for exact half split)
+3. Compare digits from each half position-by-position
+4. If all digits match, the ID is invalid
 
 **Examples:**
 - `11` → "1" + "1" (equal) → INVALID
 - `1212` → "12" + "12" (equal) → INVALID
 - `123123` → "123" + "123" (equal) → INVALID
 - `123456` → "123" + "456" (not equal) → VALID
-- `121212` → "121" + "212" (not equal) → VALID
 
-### Range Processing
+### Part 2: Pattern Repeated 2+ Times
 
-1. Parse comma-separated ranges from input (e.g., "11-22,95-115")
-2. For each range, generate all numbers from start to end (inclusive)
-3. Check each number with the pattern detection algorithm
-4. Sum all invalid product IDs found
+An invalid product ID is one where any pattern is repeated at least twice consecutively.
+
+**Algorithm:**
+1. Try each possible pattern length from 1 to (total digits / 2)
+2. For each pattern length that evenly divides the total length:
+   - Extract the pattern (first N digits)
+   - Check if this pattern repeats throughout the entire number
+   - If found, the ID is invalid
+3. Return false if no repeating pattern found
+
+**Examples:**
+- `111` → "1" × 3 → INVALID
+- `565656` → "56" × 3 → INVALID
+- `2121212121` → "21" × 5 → INVALID
+- `123456` → no repeating pattern → VALID
+
+### Key Implementation Detail: Integer-Based Digit Extraction
+
+The Carbon implementation uses integer math instead of arrays for digit extraction:
+
+```carbon
+// Count digits in a number
+fn CountDigits(n_val: i64) -> i32 {
+  var n: i64 = n_val;
+  if (n == 0) {
+    return 1;
+  }
+  var count: i32 = 0;
+  while (n > 0) {
+    n = n / 10;
+    count = count + 1;
+  }
+  return count;
+}
+
+// Get the Nth digit from the right (0-indexed)
+fn GetDigit(n: i64, pos: i32) -> i32 {
+  var temp: i64 = n;
+  var i: i32 = 0;
+  while (i < pos) {
+    temp = temp / 10;
+    i = i + 1;
+  }
+  return (temp % 10) as i32;
+}
+```
+
+This approach:
+- Avoids Carbon's experimental array features
+- Uses only stable integer operations (division, modulo)
+- Extracts digits on-demand without storage
+- Works for arbitrarily large numbers (up to i64 limits)
 
 ## Running the Solution
 
-### Integration Test (with input file)
+### Using the Container (Recommended)
+
+```bash
+# Build the container (if not already built)
+cd solutions/carbon
+podman build -t carbon-aoc:day1 -f Dockerfile.minimal .
+
+# Run with sample input
+podman run --rm \
+  -v "$(pwd)/day02:/host:Z" \
+  -v "$(pwd)/../../challenges/day02:/input:Z" \
+  localhost/carbon-aoc:day1 bash -c "
+    cp -r /host/* /workspace/examples/aoc2025/day02/
+    cd /workspace
+    bazel build //examples/aoc2025/day02:day02
+    ./bazel-bin/examples/aoc2025/day02/day02 < /input/input-sample.txt
+"
+
+# Run with real input
+podman run --rm \
+  -v "$(pwd)/day02:/host:Z" \
+  -v "$(pwd)/../../challenges/day02:/input:Z" \
+  localhost/carbon-aoc:day1 bash -c "
+    cp -r /host/* /workspace/examples/aoc2025/day02/
+    cd /workspace
+    bazel build //examples/aoc2025/day02:day02
+    ./bazel-bin/examples/aoc2025/day02/day02 < /input/input.txt
+"
+```
+
+### Using the Runner Script
 
 ```bash
 # From project root
-cat challenges/day02/input-sample.txt | python3 solutions/carbon/day02/runner.py
-
-# Expected output: {"part1": 1227775554, "part2": null}
+./scripts/runners/run_carbon.sh day02 challenges/day02/input-sample.txt
+./scripts/runners/run_carbon.sh day02 challenges/day02/input.txt
 ```
-
-### Unit Tests
-
-```bash
-# From project root
-python3 solutions/carbon/day02/test_carbon_day02.py
-
-# Runs all 24 unit tests
-```
-
-### Direct Execution
-
-```bash
-# From project root
-cat challenges/day02/input.txt | python3 solutions/carbon/day02/runner.py
-```
-
-## Test Results
-
-All 24 unit tests pass:
-
-**Pattern Detection Tests (8):**
-1. Single repeated digit (11, 22) - PASSED
-2. Two digit repeated pattern (1212) - PASSED
-3. Longer repeated pattern (123123) - PASSED
-4. Valid number with no repetition (123456) - PASSED
-5. Single digit valid (1, 5) - PASSED
-6. Mid-length pattern (12345656) - PASSED
-7. Partial match (123412) - PASSED
-8. Multiple patterns (121212) - PASSED
-
-**Range Processing Tests (8):**
-9. Range 11-22 → [11, 22] (sum=33) - PASSED
-10. Range 95-115 → [99] (sum=99) - PASSED
-11. Range 998-1012 → [1010] (sum=1010) - PASSED
-12. Range 1188511880-1188511890 → [1188511885] - PASSED
-13. Range 222220-222224 → [222222] - PASSED
-14. Range 1698522-1698528 → [] (no invalid) - PASSED
-15. Range 446443-446449 → [446446] - PASSED
-16. Range 38593856-38593862 → [38593859] - PASSED
-
-**Helper Function Tests (4):**
-17. Parse single range - PASSED
-18. Parse multiple ranges - PASSED
-19. Parse ranges with whitespace - PASSED
-20. Solve simple example - PASSED
-
-**Integration Tests (3):**
-21. Sample input (1227775554) - PASSED
-22. No invalid IDs (0) - PASSED
-23. Multiple ranges sum (132) - PASSED
-
-**Verification Test (1):**
-24. Specific invalid IDs - PASSED
 
 ## Validation Results
 
 ### Sample Input
 - Input: `challenges/day02/input-sample.txt`
-- Expected: `{"part1": 1227775554, "part2": null}`
-- Actual: `{"part1": 1227775554, "part2": null}`
-- Status: **PASS**
+- Expected: `{"part1": 1227775554, "part2": 4174379265}`
+- Actual: `{"part1": 1227775554, "part2": 4174379265}`
+- Status: **PASS** ✓
 
 ### Real Input
 - Input: `challenges/day02/input.txt`
-- Expected: `{"part1": <REDACTED>, "part2": null}`
-- Actual: `{"part1": <REDACTED>, "part2": null}`
-- Status: **PASS**
+- Actual: `{"part1": <redacted>, "part2": <redacted>}`
+- Status: **PASS** ✓
 
 ## Performance
 
-- Execution time: ~0.9 seconds
+- Execution time: ~2-5 seconds (includes Bazel build cache)
 - Target: under 15 seconds
 - Status: **PASS** (well under target)
 
-The algorithm is O(N) where N is the total count of numbers across all ranges.
+The algorithm is O(N × D) where:
+- N = total count of numbers across all ranges
+- D = average number of digits per number
 
-## Cross-Language Consistency
+## Technical Details
 
-The Carbon implementation produces identical results to:
-- Rust: `{"part1": <REDACTED>, "part2": null}` ✓
-- Gleam: `{"part1": <REDACTED>, "part2": null}` ✓
-- Carbon: `{"part1": <REDACTED>, "part2": null}` ✓
+### Container Environment
+- Base: Ubuntu 22.04
+- Compiler: Clang 19
+- Build System: Bazel 8.3.1
+- Carbon: Latest trunk (as of container build)
+
+### Carbon Language Features Used
+- Integer arithmetic (i64, i32)
+- Boolean logic
+- While loops
+- Function definitions
+- Character I/O via Core library
+- Type casting
+- Pointer parameters for multiple return values
+
+### Carbon Language Features Avoided
+- Arrays (using integer math instead)
+- Strings (using character I/O)
+- Standard library (except Core.ReadChar/PrintChar)
+
+## Implementation Notes
+
+1. **No Array Dependencies**: The implementation extracts digits using division and modulo operations rather than storing them in arrays, avoiding Carbon's experimental array features.
+
+2. **Character-Based I/O**: Input is read character-by-character using `Core.ReadChar()` and parsed manually. Output is printed character-by-character using `Core.PrintChar()`.
+
+3. **Manual JSON Formatting**: Since Carbon lacks string formatting, the JSON output is constructed by printing individual characters for the structure (`{`, `"`, `:`, `,`, `}`).
+
+4. **Digit Extraction Pattern**: The `GetDigit(n, pos)` function extracts the digit at position `pos` from the right (0-indexed) by dividing by 10 repeatedly, then taking modulo 10.
+
+5. **Pattern Matching**: Both Part 1 and Part 2 pattern detection work by comparing digits extracted from different positions in the number.
 
 ## Algorithm Verification
 
@@ -178,8 +212,28 @@ The Carbon implementation produces identical results to:
 
 From the problem statement, these ranges produce the following invalid IDs:
 
-| Range | Invalid IDs Found | Sum |
-|-------|------------------|-----|
+**Part 1 (Pattern repeated exactly twice):**
+
+| Range | Invalid IDs Found | Contribution |
+|-------|------------------|--------------|
+| 11-22 | 11, 22 | 33 |
+| 95-115 | 99 | 99 |
+| 998-1012 | 1010 | 1010 |
+| 1188511880-1188511890 | 1188511885 | 1188511885 |
+| 222220-222224 | 222222 | 222222 |
+| 1698522-1698528 | (none) | 0 |
+| 446443-446449 | 446446 | 446446 |
+| 38593856-38593862 | 38593859 | 38593859 |
+| 565653-565659 | (none - "56" appears 3 times) | 0 |
+| 824824821-824824827 | (none - "824" appears 3 times) | 0 |
+| 2121212118-2121212124 | (none - "21" appears 5 times) | 0 |
+
+**Part 1 Total:** 1227775554 ✓
+
+**Part 2 (Pattern repeated 2+ times):**
+
+| Range | Invalid IDs Found | Contribution |
+|-------|------------------|--------------|
 | 11-22 | 11, 22 | 33 |
 | 95-115 | 99 | 99 |
 | 998-1012 | 1010 | 1010 |
@@ -192,20 +246,31 @@ From the problem statement, these ranges produce the following invalid IDs:
 | 824824821-824824827 | 824824824 | 824824824 |
 | 2121212118-2121212124 | 2121212121 | 2121212121 |
 
-**Total Sum:** 1227775554 ✓
+**Part 2 Total:** 4174379265 ✓
 
-## Future Work
+## Migration Notes
 
-When Carbon's standard library matures:
-1. Replace Python wrapper with native Carbon I/O
-2. Use Carbon's string slicing APIs (when available)
-3. Integrate with Carbon's official test framework (when available)
-4. Add direct execution without Python dependency
+This implementation was migrated from a Python wrapper approach to real Carbon:
 
-## Notes
+### Previous Approach (Python Wrapper)
+- Python script with Carbon documentation
+- Python handled all I/O and string operations
+- Carbon code was reference only
 
-- The Carbon code demonstrates the correct algorithm structure
-- All logic flows match the Rust and Gleam implementations
-- The Python wrapper is a temporary bridge until Carbon matures
-- Documentation in `day02.carbon` explains all implementation details
-- The algorithm is simple and efficient: just split and compare
+### Current Approach (Real Carbon)
+- Pure Carbon implementation
+- Character-based I/O using Core library
+- Integer-based digit extraction
+- Containerized build and execution
+- No Python dependencies for execution
+
+### Key Migration Decisions
+1. **Array Avoidance**: Instead of using Carbon's experimental array features, we use integer math to extract digits on-demand
+2. **Character I/O**: All input/output uses `Core.ReadChar()` and `Core.PrintChar()` with manual parsing
+3. **Manual Number Formatting**: The `PrintInt()` function manually converts integers to digit characters for output
+
+## References
+
+- Carbon Language: https://github.com/carbon-language/carbon-lang
+- Carbon Arrays Documentation: https://docs.carbon-lang.dev/docs/design/#arrays-and-slices
+- Day 01 Reference Implementation: [../day01/](../day01/)

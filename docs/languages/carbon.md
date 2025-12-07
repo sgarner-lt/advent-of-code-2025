@@ -6,123 +6,160 @@ Carbon is an experimental programming language being developed as a potential su
 
 **Status**: Experimental (pre-1.0)
 **Official Website**: https://github.com/carbon-language/carbon-lang
-**Platform Support**: macOS (via source build)
+**Platform Support**: Docker/Podman container (cross-platform)
 
 ## Installation
 
 ### Prerequisites
 
-Before installing Carbon, ensure you have:
-- **Homebrew** package manager
-- **Git** for cloning repositories
-- **Xcode Command Line Tools** (`xcode-select --install`)
+This project uses a containerized approach for Carbon due to its complex build requirements:
+- **Docker** or **Podman** (container runtime)
+- **4GB+ RAM** allocated to container runtime
+- **~5 hours** for initial container build (one-time, then cached)
 
-### Automated Installation
+### Container-Based Installation
 
-Use the provided installation script:
+The Carbon toolchain is built and run inside a Docker/Podman container to ensure consistent behavior across platforms.
+
+#### Building the Container
+
+The container is built automatically when running Carbon solutions. To build manually:
 
 ```bash
-./scripts/install_carbon.sh
+cd solutions/carbon
+podman build -t carbon-aoc:day1 -f Dockerfile.minimal .
 ```
 
-The script will:
-1. Install required dependencies (Bazelisk, LLVM, Python 3.11)
-2. Clone the Carbon language repository
-3. Set up the build environment
-4. Verify the installation
+**Build specifications:**
+- **Base image**: Ubuntu 22.04
+- **Compiler**: Clang 19 (from LLVM repository)
+- **Build system**: Bazel 8.3.1
+- **Build time**: ~5 hours (8,133 compilation steps)
+- **Container size**: ~2GB final image
+- **Memory requirements**: 4GB RAM for Podman machine
 
-### Manual Installation
+#### Container Build Process
 
-If you prefer to install manually:
+The Dockerfile performs these steps:
+1. Install prerequisites (build-essential, git, python3, wget)
+2. Add LLVM 19 repository and install Clang 19
+3. Clone Carbon language repository (shallow clone)
+4. Build Carbon toolchain with Bazel (`--jobs=2 --local_ram_resources=3500`)
+5. Create wrapper script for easy `carbon` command access
 
-1. **Install dependencies via Homebrew:**
-   ```bash
-   brew install bazelisk llvm python@3.11
-   ```
+### Resource Configuration
 
-2. **Add LLVM to your PATH:**
-   ```bash
-   export PATH="/usr/local/opt/llvm/bin:$PATH"
-   ```
-   Add this to your `~/.zshrc` or `~/.bashrc` to make it permanent.
-
-3. **Clone the Carbon repository:**
-   ```bash
-   mkdir -p ~/.local/carbon
-   cd ~/.local/carbon
-   git clone https://github.com/carbon-language/carbon-lang.git
-   ```
-
-4. **Verify Bazel is working:**
-   ```bash
-   cd carbon-lang
-   bazel version
-   ```
-
-### Post-Installation Configuration
-
-After installation, you may want to add the LLVM tools to your shell profile:
+If you encounter memory issues during container builds:
 
 ```bash
-echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
+# Stop and reconfigure Podman machine (macOS)
+podman machine stop
+podman machine set --memory 4096  # 4GB RAM
+podman machine start
 ```
 
-## Carbon Toolchain Basics
+## Running Carbon Programs
 
-### Project Structure
+### Using the Container
 
-Carbon is built using Bazel as its build system. The repository structure includes:
-- `explorer/` - The Carbon language interpreter/explorer
-- `toolchain/` - The Carbon compiler toolchain
-- `docs/` - Language design documentation
-- `testdata/` - Example Carbon programs
-
-### Running Carbon Programs
-
-Carbon provides several ways to run programs:
-
-#### 1. Using the Explorer (Interpreter)
-
-The explorer is the primary tool for running Carbon programs during development:
+Carbon programs are compiled and run inside the container using Bazel:
 
 ```bash
-cd ~/.local/carbon/carbon-lang
-bazel run //explorer -- /path/to/your/program.carbon
+# Run a Carbon solution
+podman run --rm \
+  -v $(pwd)/solutions/carbon/day01:/host:Z \
+  -v $(pwd)/challenges/day01:/input:Z \
+  carbon-aoc:day1 bash -c "
+    mkdir -p /opt/carbon-lang/examples/aoc2025/day01 &&
+    cp /host/day01_simple.carbon /opt/carbon-lang/examples/aoc2025/day01/ &&
+    cd /opt/carbon-lang/examples/aoc2025/day01 &&
+    echo 'load(\"//bazel/carbon_rules:defs.bzl\", \"carbon_binary\")
+
+carbon_binary(
+    name = \"day01\",
+    srcs = [\"day01_simple.carbon\"],
+)' > BUILD &&
+    cd /opt/carbon-lang &&
+    ./scripts/run_bazelisk.py build --jobs=2 --local_ram_resources=3500 //examples/aoc2025/day01:day01 &&
+    ./bazel-bin/examples/aoc2025/day01/day01 < /input/input.txt
+"
 ```
 
-#### 2. Using the Compiler (Experimental)
+### Using the Runner Script
 
-The Carbon compiler is under active development:
+The project includes a wrapper script that handles container execution:
 
 ```bash
-cd ~/.local/carbon/carbon-lang
-bazel run //toolchain/driver:carbon -- compile /path/to/your/program.carbon
+./scripts/runners/run_carbon.sh 1 challenges/day01/input.txt
+```
+
+The script:
+1. Copies Carbon source files into the container
+2. Creates a Bazel BUILD file
+3. Compiles the Carbon program with Bazel
+4. Runs the compiled binary with the provided input
+5. Returns JSON output to stdout
+
+## Carbon Language Basics
+
+### Project Structure for Advent of Code
+
+Each Carbon solution follows this structure:
+
+```
+solutions/carbon/day01/
+├── day01_simple.carbon    # Main solution file
+└── README.md             # Problem description
 ```
 
 ### Basic Carbon Syntax
 
 Carbon syntax is designed to be familiar to C++ developers while incorporating modern language features.
 
-#### Hello World Example
+#### Example: Day 1 Solution Structure
 
 ```carbon
-package Sample api;
+// Import Core library for I/O
+import Core library "io";
 
-fn Main() -> i32 {
-  var s: String = "Hello from Carbon!";
-  Print(s);
-  return 0;
+// Global variables (module-level)
+var unread_char: i32 = 0;
+
+// Function definitions
+fn ReadChar() -> i32 {
+  if (unread_char != 0) {
+    var result: i32 = unread_char - 2;
+    unread_char = 0;
+    return result;
+  }
+  return Core.ReadChar();
+}
+
+// Class definitions
+class Rotation {
+  var is_left: bool;
+  var distance: i32;
+}
+
+// Entry point
+fn Run() {
+  var position: i32 = 50;
+  // ... solution logic ...
+
+  // Output JSON
+  Core.PrintChar('{');
+  // ... print JSON output ...
 }
 ```
 
 #### Key Syntax Elements
 
-- **Package declaration**: `package Sample api;` - Defines the package
-- **Function definition**: `fn FunctionName() -> ReturnType { ... }`
+- **Import statement**: `import Core library "io";` - Imports core library
+- **Function definition**: `fn FunctionName(params) -> ReturnType { ... }`
 - **Variable declaration**: `var name: Type = value;`
+- **Class definition**: `class ClassName { var field: Type; }`
 - **Comments**: Use `//` for single-line comments
-- **Return type**: Specified with `-> Type` after function parameters
+- **Immutable parameters**: Function parameters cannot be reassigned
 
 ### Common Operations
 
@@ -130,9 +167,9 @@ fn Main() -> i32 {
 
 ```carbon
 var x: i32 = 42;          // Integer
-var y: f64 = 3.14;        // Float
-var s: String = "text";   // String
+var y: f64 = 3.14;        // Float (limited support)
 var b: bool = true;       // Boolean
+var c: i32 = 0x41;        // Hex literal (character code)
 ```
 
 #### Control Flow
@@ -140,6 +177,8 @@ var b: bool = true;       // Boolean
 ```carbon
 // If statement
 if (condition) {
+  // code
+} else if (other_condition) {
   // code
 } else {
   // code
@@ -149,6 +188,9 @@ if (condition) {
 while (condition) {
   // code
 }
+
+// Break from loop
+break;
 ```
 
 #### Functions
@@ -157,7 +199,44 @@ while (condition) {
 fn Add(x: i32, y: i32) -> i32 {
   return x + y;
 }
+
+// Function with pointer parameter (for output)
+fn ReadInt(p: i32*) -> bool {
+  *p = 42;  // Dereference to assign
+  return true;
+}
 ```
+
+#### I/O Operations
+
+```carbon
+// Read a single character from stdin
+var c: i32 = Core.ReadChar();
+
+// Check for EOF
+if (c == Core.EOF()) {
+  return false;
+}
+
+// Print a single character
+Core.PrintChar('A');
+Core.PrintChar('\n');
+
+// Print as u8 then cast to char for digits
+Core.PrintChar(((digit + 0x30) as u8) as char);
+```
+
+### Carbon Limitations
+
+Current limitations of Carbon (as of December 2025):
+
+1. **No string type**: Must use character-by-character I/O
+2. **No standard library**: Only Core library available
+3. **No dynamic allocation**: Use fixed-size arrays
+4. **No library imports**: Must inline all utility functions or use Bazel build system
+5. **No trailing comments on some lines**: Comments cause compilation errors in certain contexts
+6. **No enum equality**: Choice types don't auto-implement equality
+7. **Immutable parameters**: Cannot reassign function parameters
 
 ## Development Environment
 
@@ -190,151 +269,114 @@ Carbon does not yet have a stable language server protocol (LSP) implementation.
 
 ### Common Issues
 
-#### 1. Bazel Not Found
+#### 1. Container Build Fails with OOM Error
 
-**Symptom**: `bazel: command not found`
-
-**Solution**:
-```bash
-brew install bazelisk
-# Or add Homebrew to PATH:
-export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
-```
-
-#### 2. LLVM Clang Not Found
-
-**Symptom**: Build errors mentioning missing LLVM or Clang
+**Symptom**: `Server terminated abruptly (error code: 14, error message: 'Socket closed')`
 
 **Solution**:
 ```bash
-brew install llvm
-export PATH="/usr/local/opt/llvm/bin:$PATH"
+# Increase Podman machine memory
+podman machine stop
+podman machine set --memory 4096  # or higher
+podman machine start
+
+# Rebuild with memory constraints
+podman build -t carbon-aoc:day1 -f Dockerfile.minimal .
 ```
 
-#### 3. Python Version Issues
+#### 2. Compilation Errors with Trailing Comments
 
-**Symptom**: Errors about Python version or missing Python
+**Symptom**: `error: trailing comments are not permitted`
 
-**Solution**:
-```bash
-brew install python@3.11
+**Solution**: Remove inline comments from certain statement types (if statements, assignments in some contexts).
+
+#### 3. Cannot Copy Value of Type
+
+**Symptom**: `error: cannot copy value of type 'Direction'`
+
+**Solution**: Carbon's choice types (enums) don't automatically implement the `Copy` interface. Use bool flags instead of choice types, or implement explicit Copy.
+
+#### 4. Cannot Assign to Function Parameter
+
+**Symptom**: `error: expression is not assignable`
+
+**Solution**: Function parameters are immutable in Carbon. Copy to a local variable first:
+```carbon
+fn PrintInt(n_val: i32) {
+  var n: i32 = n_val;  // Copy to mutable variable
+  n = -n;              // Now can modify
+}
 ```
 
-#### 4. Bazel Build Failures
+#### 5. Undefined Symbol at Link Time
 
-**Symptom**: Bazel fails to build with various errors
+**Symptom**: `ld.lld: error: undefined symbol: _CEOF.Core`
 
-**Solution**:
-- Ensure Xcode Command Line Tools are installed: `xcode-select --install`
-- Clear Bazel cache: `bazel clean --expunge`
-- Update the Carbon repository: `cd ~/.local/carbon/carbon-lang && git pull`
+**Solution**: Must use Bazel build system instead of compiling/linking directly. Carbon requires runtime libraries that Bazel manages automatically.
 
-#### 5. Slow Initial Build
+### Performance Notes
 
-**Symptom**: First Bazel build takes a very long time
+- **Container build**: 5+ hours initially, cached afterward
+- **Compilation time**: ~2-3 minutes per solution (with cached dependencies)
+- **Runtime**: Fast (compiled to native code)
+- **Memory usage**: 4GB recommended for build, <1GB for runtime
 
-**Explanation**: This is normal. Bazel downloads and compiles many dependencies on first run. Subsequent builds will be much faster due to caching.
+## Implementation Notes for Advent of Code
 
-### Getting Help
+### Historical Context
 
-- **Official Repository**: https://github.com/carbon-language/carbon-lang
-- **Discussion Forum**: https://github.com/carbon-language/carbon-lang/discussions
-- **Design Documentation**: https://github.com/carbon-language/carbon-lang/tree/trunk/docs/design
-- **Issue Tracker**: https://github.com/carbon-language/carbon-lang/issues
+Previous implementations (Days 1-4) used Python wrappers because:
+- Carbon's toolchain was difficult to set up on macOS
+- Limited I/O capabilities were uncertain
+- Build process was complex and poorly documented
 
-## Experimental Language Limitations
+### Current Approach (Day 1+)
 
-### Important Caveats
+Real Carbon implementations are now used:
+- Containerized build environment ensures consistency
+- Direct I/O through Core library (`Core.ReadChar()`, `Core.PrintChar()`)
+- Bazel build system handles all dependencies
+- No Python wrappers needed
 
-1. **Not Production Ready**: Carbon is experimental and should not be used for production code
-2. **Breaking Changes**: The language syntax and semantics are subject to frequent breaking changes
-3. **Limited Documentation**: Language documentation is evolving alongside the language design
-4. **Incomplete Features**: Many planned features are not yet implemented
-5. **Build Complexity**: Building from source requires significant disk space and time
-6. **Limited Tooling**: IDE support, debuggers, and other development tools are minimal
+### Best Practices
 
-### What Works
+1. **Single-file solutions**: Inline utility functions to avoid library complexity
+2. **Character-based I/O**: Read/write one character at a time using hex codes
+3. **Fixed-size buffers**: No dynamic allocation available
+4. **Explicit state machines**: For parsing, track state manually
+5. **JSON output**: Print JSON character-by-character
+6. **Test in container**: Always test inside the container environment
 
-- Basic language exploration via the explorer tool
-- Experimental compilation of simple programs
-- Testing new language design proposals
-- Learning about language design concepts
+## Additional Resources
 
-### What Doesn't Work Yet
+- **Carbon Language GitHub**: https://github.com/carbon-language/carbon-lang
+- **Carbon Design Docs**: https://github.com/carbon-language/carbon-lang/tree/trunk/docs/design
+- **Carbon Advent 2024 Examples**: Examples in `/tmp/carbon-lang/examples/advent2024/` (inside container)
+- **LLVM Documentation**: https://llvm.org/docs/
 
-- Production-grade compiler optimization
-- Full standard library implementation
-- Stable language specification
-- Complete C++ interoperability
-- Package management system
-- Debugging tools
+## Container Architecture
 
-## Platform Limitations
+The Carbon container is built with:
+- **OS**: Ubuntu 22.04 (Jammy)
+- **Compiler**: Clang 19.1.7
+- **Build Tool**: Bazelisk (auto-downloads Bazel 8.3.1)
+- **Carbon Location**: `/opt/carbon-lang/`
+- **Binary Path**: `/opt/carbon-lang/bazel-bin/toolchain/carbon`
+- **Wrapper Script**: `/usr/local/bin/carbon` (convenience)
 
-**macOS Only**: This installation guide is designed for macOS. Carbon can also be built on Linux systems (particularly Ubuntu), but Windows support is limited to WSL.
+### Build Performance Tuning
 
-## Learning Resources
+The Dockerfile uses these optimizations:
+- `--jobs=2`: Limit parallel compilation to prevent OOM
+- `--local_ram_resources=3500`: Reserve 3.5GB for Bazel (out of 4GB total)
+- Shallow git clone (`--depth 1`): Saves space and time
+- Build caching: Subsequent builds reuse compiled artifacts
 
-### Official Documentation
+## Future Improvements
 
-- **Language Overview**: https://github.com/carbon-language/carbon-lang/blob/trunk/docs/project/README.md
-- **Design Philosophy**: https://github.com/carbon-language/carbon-lang/blob/trunk/docs/project/goals.md
-- **Syntax Examples**: https://github.com/carbon-language/carbon-lang/tree/trunk/explorer/testdata
-
-### Community Resources
-
-- **GitHub Discussions**: Engage with the Carbon community
-- **Design Proposals**: Review language design discussions
-- **Code Examples**: Browse the testdata directory for examples
-
-## Next Steps
-
-1. **Explore Examples**: Look through the `explorer/testdata/` directory in the Carbon repository
-2. **Read Design Docs**: Understand the language design philosophy and goals
-3. **Experiment**: Try writing simple programs with the explorer
-4. **Follow Development**: Watch the GitHub repository for updates
-5. **Provide Feedback**: Participate in design discussions if interested
-
-## Version History
-
-- **Current**: Experimental pre-release (no stable version)
-- **Development**: Active ongoing development
-- **Goal**: To eventually become a viable C++ successor
-
-## Useful Commands Reference
-
-```bash
-# Clone/update Carbon repository
-cd ~/.local/carbon/carbon-lang
-git pull origin trunk
-
-# Run a Carbon program with explorer
-bazel run //explorer -- /path/to/program.carbon
-
-# Query available build targets
-bazel query //...
-
-# Clean build cache
-bazel clean
-
-# Full clean (removes all build artifacts)
-bazel clean --expunge
-
-# Check Bazel version
-bazel version
-
-# Update Bazel
-brew upgrade bazelisk
-```
-
-## Contributing to Carbon
-
-If you're interested in contributing to Carbon language development:
-
-1. Read the contribution guidelines in the repository
-2. Join the design discussions
-3. Review the open issues and design proposals
-4. Test experimental features and report bugs
-5. Provide feedback on language design decisions
-
-Carbon is an open-source project welcoming community involvement in its development.
+Potential improvements for Carbon integration:
+- [ ] Pre-built container image hosted on Docker Hub
+- [ ] Simplified runner script with better error messages
+- [ ] Support for Carbon libraries (when available)
+- [ ] Integration tests for all days
+- [ ] Performance benchmarking vs other languages
