@@ -234,9 +234,10 @@ Current limitations of Carbon (as of December 2025):
 2. **No standard library**: Only Core library available
 3. **No dynamic allocation**: Use fixed-size arrays
 4. **No library imports**: Must inline all utility functions or use Bazel build system
-5. **No trailing comments on some lines**: Comments cause compilation errors in certain contexts
+5. **No trailing comments**: Comments MUST be on their own line, never after code on the same line
 6. **No enum equality**: Choice types don't auto-implement equality
 7. **Immutable parameters**: Cannot reassign function parameters
+8. **No nested array parameters**: Large nested arrays cannot be passed as function parameters, use globals instead
 
 ## Development Environment
 
@@ -288,7 +289,22 @@ podman build -t carbon-aoc:day1 -f Dockerfile.minimal .
 
 **Symptom**: `error: trailing comments are not permitted`
 
-**Solution**: Remove inline comments from certain statement types (if statements, assignments in some contexts).
+**Solution**: Carbon does NOT allow comments after code on the same line. All comments must be on their own line.
+
+```carbon
+// INCORRECT - Will cause compilation error:
+grid[r][c] = 0x2E;  // Initialize to '.'
+if (grid[r][c] == 0x40) {  // Check for '@'
+
+// CORRECT - Comments on separate lines:
+// Initialize to '.'
+grid[r][c] = 0x2E;
+
+// Check for '@'
+if (grid[r][c] == 0x40) {
+```
+
+This is a strict Carbon syntax rule and applies to ALL statements, not just specific types.
 
 #### 3. Cannot Copy Value of Type
 
