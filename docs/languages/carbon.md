@@ -237,7 +237,10 @@ Current limitations of Carbon (as of December 2025):
 5. **No trailing comments**: Comments MUST be on their own line, never after code on the same line
 6. **No enum equality**: Choice types don't auto-implement equality
 7. **Immutable parameters**: Cannot reassign function parameters
-8. **No nested array parameters**: Large nested arrays cannot be passed as function parameters, use globals instead
+8. **No array copying**: Large arrays (>~100 elements) cannot be passed/returned by value, use globals instead
+9. **Entry point is `fn Run()`**: Executables must use `fn Run()` not `fn Main()` or `main`
+10. **No library declaration for executables**: Files with `library "name";` are library modules, not executables
+11. **Range requires import**: For loops need `import Core library "range";` to use `Core.Range()`
 
 ## Development Environment
 
@@ -324,7 +327,55 @@ fn PrintInt(n_val: i32) {
 }
 ```
 
-#### 5. Undefined Symbol at Link Time
+#### 5. Undefined Symbol: main at Link Time
+
+**Symptom**: `ld.lld: error: undefined symbol: main`
+
+**Solution**: Carbon executables use `fn Run()` as the entry point, not `fn Main()` or `main`. Also, remove any `library "name";` declaration at the top of the file.
+
+```carbon
+// INCORRECT - Will fail to link
+library "myprogram";
+
+fn Main() -> i32 {
+  return 0;
+}
+
+// CORRECT - Proper entry point
+import Core library "io";
+
+fn Run() {
+  Core.PrintChar('\n');
+}
+```
+
+#### 6. Cannot Copy Large Array
+
+**Symptom**: `error: cannot copy value of type 'array(i32, 10000)'` or similar
+
+**Solution**: Carbon cannot copy large arrays by value. Use global variables instead:
+
+```carbon
+// INCORRECT - Cannot copy large arrays
+fn ReadBuffer() -> array(i32, 10000) {
+  var buffer: array(i32, 10000);
+  // ... fill buffer ...
+  return buffer;  // ERROR: cannot copy
+}
+
+// CORRECT - Use global variable
+var input_buffer: array(i32, 10000);
+
+fn ReadBuffer() {
+  var i: i32 = 0;
+  while (i < 10000) {
+    input_buffer[i] = Core.ReadChar();
+    ++i;
+  }
+}
+```
+
+#### 7. Undefined Symbol at Link Time (Core library)
 
 **Symptom**: `ld.lld: error: undefined symbol: _CEOF.Core`
 
@@ -362,12 +413,178 @@ Real Carbon implementations are now used:
 4. **Explicit state machines**: For parsing, track state manually
 5. **JSON output**: Print JSON character-by-character
 6. **Test in container**: Always test inside the container environment
+7. **Use `fn Run()` as entry point**: NOT `fn Main()` - Carbon executables use `Run()`
+8. **No library declarations**: Don't use `library "name";` for executable files
+9. **Import Core.range**: For loops require `import Core library "range";` and `Core.Range(n)`
+
+### Critical Patterns from Day 05 Implementation
+
+#### Entry Point Pattern
+
+```carbon
+// CORRECT - Executable entry point
+import Core library "io";
+import Core library "range";
+
+fn Run() {
+  // Your code here
+  Core.PrintChar('\n');
+}
+```
+
+```carbon
+// INCORRECT - Will fail to link
+library "mylib";  // Don't use this for executables
+
+fn Main() -> i32 {  // Wrong function name
+  return 0;
+}
+```
+
+#### Array Handling Pattern
+
+Large arrays cannot be copied by value. Use global variables:
+
+```carbon
+// CORRECT - Global array
+var input_buffer: array(i32, 30000);
+
+fn ReadInput() {
+  var i: i32 = 0;
+  while (i < 30000) {
+    input_buffer[i] = Core.ReadChar();
+    ++i;
+  }
+}
+```
+
+```carbon
+// INCORRECT - Cannot copy large arrays
+fn ReadInput() -> array(i32, 30000) {
+  var buffer: array(i32, 30000);
+  return buffer;  // ERROR: cannot copy value of type array(i32, 30000)
+}
+```
+
+#### For Loop Pattern
+
+Must import `Core library "range"` to use `Core.Range()`:
+
+```carbon
+import Core library "range";
+
+fn ProcessItems() {
+  var items: array(i64, 100);
+  var count: i32 = 50;
+
+  // Iterate over range
+  for (i: i32 in Core.Range(count)) {
+    // items[i] available here
+  }
+}
+```
+
+#### I/O Utilities Pattern (from advent2024)
+
+For robust parsing, use these patterns from `io_utils.carbon`:
+
+```carbon
+// Character buffering
+var unread_char: i32 = 0;
+
+fn ReadChar() -> i32 {
+  if (unread_char != 0) {
+    var result: i32 = unread_char - 2;
+    unread_char = 0;
+    return result;
+  }
+  return Core.ReadChar();
+}
+
+fn UnreadChar(c: i32) {
+  unread_char = c + 2;
+}
+
+// Integer parsing with pointer output
+fn ReadInt64(p: i64*) -> bool {
+  var read_any_digits: bool = false;
+  *p = 0;
+
+  while (true) {
+    var c: i32 = ReadChar();
+    if (c < 0x30 or c > 0x39) {
+      UnreadChar(c);
+      break;
+    }
+    *p = *p * 10;
+    *p = *p + ((c - 0x30) as i64);
+    read_any_digits = true;
+  }
+  return read_any_digits;
+}
+
+// Consume specific character
+fn ConsumeChar(c: i32) -> bool {
+  var next: i32 = ReadChar();
+  if (next != c) {
+    UnreadChar(next);
+    return false;
+  }
+  return true;
+}
+
+// Skip newline (handles CR, LF, CRLF)
+fn SkipNewline() -> bool {
+  ConsumeChar(0x0D);  // Optional CR
+  return ConsumeChar(0x0A);  // LF
+}
+```
+
+## Carbon Advent 2024 Examples
+
+The Carbon container includes working Advent of Code 2024 solutions that demonstrate best practices:
+
+**Location in container**: `/opt/carbon-lang/examples/advent2024/`
+**Local copy**: `/tmp/carbon-lang/examples/advent2024/` (if available)
+
+### Key Files to Reference
+
+1. **`io_utils.carbon`** - Essential I/O utilities:
+   - `ReadChar()` / `UnreadChar()` - Character buffering
+   - `ReadInt64(p: i64*)` - Parse integers with pointer output
+   - `PrintInt64NoNewline()` - Print integers
+   - `ConsumeChar(c: i32)` - Consume specific character
+   - `SkipNewline()` - Handle CR/LF/CRLF
+   - `SkipSpaces()` - Skip whitespace
+
+2. **`day5_common.carbon`** - Complex parsing example
+   - Shows class definitions with methods
+   - Demonstrates file parsing patterns
+   - Uses bit manipulation for performance
+
+3. **`day5_part1.carbon`** - Entry point pattern
+   - Shows proper `fn Run()` entry point (NOT `Main`)
+   - No library declaration for executables
+   - Imports other Carbon libraries
+
+### Extracting Examples from Container
+
+```bash
+# Copy io_utils.carbon from container
+podman run --rm carbon-aoc:day1 cat /opt/carbon-lang/examples/advent2024/io_utils.carbon > io_utils.carbon
+
+# List all advent2024 examples
+podman run --rm carbon-aoc:day1 ls -la /opt/carbon-lang/examples/advent2024/
+
+# View any example file
+podman run --rm carbon-aoc:day1 cat /opt/carbon-lang/examples/advent2024/day5_part1.carbon
+```
 
 ## Additional Resources
 
 - **Carbon Language GitHub**: https://github.com/carbon-language/carbon-lang
 - **Carbon Design Docs**: https://github.com/carbon-language/carbon-lang/tree/trunk/docs/design
-- **Carbon Advent 2024 Examples**: Examples in `/tmp/carbon-lang/examples/advent2024/` (inside container)
+- **Carbon Advent 2024 Examples**: `/opt/carbon-lang/examples/advent2024/` (in container) or `/tmp/carbon-lang/examples/advent2024/` (local)
 - **LLVM Documentation**: https://llvm.org/docs/
 
 ## Container Architecture

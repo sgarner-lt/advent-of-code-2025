@@ -76,7 +76,7 @@
 ## Phase 5: Day 5 Solutions
 *Problem releases December 5th at midnight EST*
 
-16. [ ] Day 5 Part 1 — Implement Part 1 solution in all 4 languages with cross-language validation `M`
+16. [x] Day 5 Part 1 — Implement Part 1 solution in all 4 languages with cross-language validation `M`
 
 17. [ ] Day 5 Part 2 — Implement Part 2 solution in all 4 languages with cross-language validation `M`
 

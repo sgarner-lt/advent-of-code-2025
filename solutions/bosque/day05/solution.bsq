@@ -1,0 +1,284 @@
+namespace Main;
+
+// Advent of Code 2025 Day 5 Part 1 - Cafeteria Ingredient Freshness
+//
+// IMPORTANT: Bosque is a Microsoft Research language with limited stdlib
+// This implementation follows the spec but requires a Python wrapper
+// for file I/O and execution due to BosqueCore limitations.
+//
+// Algorithm:
+// Part 1: Determine how many available ingredient IDs fall within fresh ingredient ID ranges
+//
+// Input format:
+// - Group 1: Fresh ingredient ID ranges (format: "start-end")
+// - Blank line separator
+// - Group 2: Available ingredient IDs (single numbers)
+//
+// Examples:
+// Fresh ranges:
+// - "3-5": IDs 3, 4, and 5 are fresh (inclusive)
+// - "10-14": IDs 10, 11, 12, 13, and 14 are fresh
+// - Ranges can overlap: ID 17 is fresh if in "16-20" OR "12-18"
+//
+// Available IDs:
+// - ID 1: spoiled (not in any range)
+// - ID 5: fresh (in range 3-5)
+// - ID 11: fresh (in range 10-14)
+// - ID 17: fresh (in ranges 16-20 and 12-18)
+//
+// Expected results:
+// - Sample input (input-sample.txt): Part 1 = 3
+// - Real input (input.txt): <to be determined>
+
+// Parse a range string in format "start-end" to extract start and end values
+// Arguments:
+// - line: String in format "start-end" (e.g., "3-5" or "20362219004570-27230899748695")
+//
+// Returns: Option of tuple {start: Int, end: Int} or none if invalid
+//
+// NOTE: This is a type signature and algorithm documentation for Bosque.
+// The actual implementation is in the Python runner due to Bosque limitations.
+function parseRange(line: String): {start: Int, end: Int}? {
+    // Trim whitespace
+    var trimmed = String::trim(line);
+
+    // Check for empty string
+    if(String::length(trimmed) == 0i) {
+        return none;
+    }
+
+    // Split by hyphen
+    var parts = String::split(trimmed, "-");
+
+    // Must have exactly 2 parts
+    if(List::size<String>(parts) != 2i) {
+        return none;
+    }
+
+    // Parse both parts as integers
+    var startStr = String::trim(List::get<String>(parts, 0i));
+    var endStr = String::trim(List::get<String>(parts, 1i));
+
+    var start = String::parseInt(startStr);
+    var end = String::parseInt(endStr);
+
+    // Both must parse successfully
+    if(start == none || end == none) {
+        return none;
+    }
+
+    return {start: start, end: end};
+}
+
+// Parse an ID string to extract the numeric value
+// Arguments:
+// - line: String containing a single number (e.g., "17")
+//
+// Returns: Option of Int or none if invalid
+//
+// NOTE: This is a type signature and algorithm documentation for Bosque.
+// The actual implementation is in the Python runner due to Bosque limitations.
+function parseId(line: String): Int? {
+    var trimmed = String::trim(line);
+
+    if(String::length(trimmed) == 0i) {
+        return none;
+    }
+
+    return String::parseInt(trimmed);
+}
+
+// Check if an ingredient ID is fresh (falls within any of the given ranges)
+// Ranges are inclusive: start <= id <= end
+//
+// Arguments:
+// - id: Ingredient ID to check
+// - ranges: List of {start: Int, end: Int} tuples representing fresh ranges
+//
+// Returns: true if ID is fresh (in at least one range), false otherwise
+//
+// NOTE: This is a type signature and algorithm documentation for Bosque.
+// The actual implementation is in the Python runner due to Bosque limitations.
+function isFresh(id: Int, ranges: List<{start: Int, end: Int}>): Bool {
+    var i = 0i;
+
+    while(i < List::size<{start: Int, end: Int}>(ranges)) {
+        var range = List::get<{start: Int, end: Int}>(ranges, i);
+
+        // Check if id falls within this range (inclusive)
+        if(id >= range.start && id <= range.end) {
+            return true;
+        }
+
+        i = i + 1i;
+    }
+
+    return false;
+}
+
+// Main solution function that processes input and counts fresh ingredients
+//
+// Algorithm:
+// 1. Split input into two groups separated by blank line
+// 2. Parse Group 1 as ranges (format: "start-end")
+// 3. Parse Group 2 as available IDs (single numbers)
+// 4. For each available ID, check if it's fresh using isFresh()
+// 5. Count and return the number of fresh ingredients
+//
+// Arguments:
+// - input: Complete input string with two groups separated by blank line
+//
+// Returns: Tuple with part1 result (count of fresh ingredients) and part2 result (null for now)
+//
+// NOTE: This is a type signature and algorithm documentation for Bosque.
+// The actual implementation is in the Python runner due to Bosque limitations.
+function solve(input: String): {part1: Int, part2: Int?} {
+    // Split input into two groups by blank line
+    var groups = String::split(input, "\n\n");
+
+    if(List::size<String>(groups) != 2i) {
+        // Invalid input format
+        return {part1: 0i, part2: none};
+    }
+
+    // Parse Group 1: Fresh ingredient ranges
+    var rangesText = List::get<String>(groups, 0i);
+    var rangeLines = String::split(rangesText, "\n");
+    var ranges = List::create<{start: Int, end: Int}>();
+
+    var i = 0i;
+    while(i < List::size<String>(rangeLines)) {
+        var line = List::get<String>(rangeLines, i);
+        var range = parseRange(line);
+
+        if(range != none) {
+            ranges = List::add<{start: Int, end: Int}>(ranges, range);
+        }
+
+        i = i + 1i;
+    }
+
+    // Parse Group 2: Available ingredient IDs
+    var idsText = List::get<String>(groups, 1i);
+    var idLines = String::split(idsText, "\n");
+    var ids = List::create<Int>();
+
+    var j = 0i;
+    while(j < List::size<String>(idLines)) {
+        var line = List::get<String>(idLines, j);
+        var id = parseId(line);
+
+        if(id != none) {
+            ids = List::add<Int>(ids, id);
+        }
+
+        j = j + 1i;
+    }
+
+    // Count fresh ingredients
+    var freshCount = 0i;
+    var k = 0i;
+
+    while(k < List::size<Int>(ids)) {
+        var id = List::get<Int>(ids, k);
+
+        if(isFresh(id, ranges)) {
+            freshCount = freshCount + 1i;
+        }
+
+        k = k + 1i;
+    }
+
+    return {part1: freshCount, part2: none};
+}
+
+// Main entry point
+// Note: File I/O in Bosque is experimental - requires Python wrapper
+//
+// NOTE: This is a type signature and algorithm documentation for Bosque.
+// The actual execution is handled by the Python runner due to Bosque limitations.
+entrypoint function main(args: List<String>): Int {
+    var inputContent = "";
+
+    // Read file path from command-line arguments
+    if(List::size<String>(args) > 1i) {
+        var filePath = List::get<String>(args, 1i);
+
+        // WORKAROUND: Bosque file I/O is not available
+        // The Python runner wrapper handles file reading and execution
+        try {
+            inputContent = Environment::readFile(filePath);
+        }
+        catch {
+            // Fallback: try reading from stdin
+            inputContent = Console::readAll();
+        }
+    }
+
+    var result = solve(inputContent);
+
+    // Output JSON format for cross-language validation
+    var output = String::concat(
+        "{\"part1\": ",
+        Int::toString(result.part1),
+        ", \"part2\": null}"
+    );
+    Console::writeLine(output);
+
+    return 0i;
+}
+
+// === UNIT TESTS ===
+// Note: These test signatures demonstrate the expected behavior.
+// Actual tests are implemented in Python (test_bosque_day05.py)
+
+// Test 1: Parse simple range "3-5"
+function test_parseRangeSimple(): Bool {
+    var range = parseRange("3-5");
+    _assert(range != none);
+    _assert(range.start == 3i);
+    _assert(range.end == 5i);
+    return true;
+}
+
+// Test 2: Parse ID "17"
+function test_parseId(): Bool {
+    var id = parseId("17");
+    _assert(id != none);
+    _assert(id == 17i);
+    return true;
+}
+
+// Test 3: ID 5 is fresh in range (3, 5)
+function test_isFreshInRange(): Bool {
+    var ranges = List::create<{start: Int, end: Int}>();
+    ranges = List::add<{start: Int, end: Int}>(ranges, {start: 3i, end: 5i});
+    _assert(isFresh(5i, ranges) == true);
+    return true;
+}
+
+// Test 4: ID 8 is not fresh in range (3, 5)
+function test_isNotFreshOutsideRange(): Bool {
+    var ranges = List::create<{start: Int, end: Int}>();
+    ranges = List::add<{start: Int, end: Int}>(ranges, {start: 3i, end: 5i});
+    _assert(isFresh(8i, ranges) == false);
+    return true;
+}
+
+// Test 5: ID 17 is fresh in overlapping ranges
+function test_isFreshInMultipleRanges(): Bool {
+    var ranges = List::create<{start: Int, end: Int}>();
+    ranges = List::add<{start: Int, end: Int}>(ranges, {start: 16i, end: 20i});
+    ranges = List::add<{start: Int, end: Int}>(ranges, {start: 12i, end: 18i});
+    _assert(isFresh(17i, ranges) == true);
+    return true;
+}
+
+// Test 6: Sample input produces expected result (part1 = 3)
+function test_sampleInput(): Bool {
+    var sample = "3-5\n10-14\n16-20\n12-18\n\n1\n5\n8\n11\n17\n32";
+    var result = solve(sample);
+    _assert(result.part1 == 3i);
+    _assert(result.part2 == none);
+    return true;
+}
