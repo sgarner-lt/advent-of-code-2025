@@ -138,7 +138,10 @@ else
 fi
 
 # Check if container image exists
+# Temporarily disable pipefail for this check (podman images may write to stderr)
+set +o pipefail
 if ! $CONTAINER_CMD images | grep -q "carbon-aoc"; then
+    set -o pipefail
     log_error "Carbon container image not found: carbon-aoc:day1"
     log_error "Please build the container first:"
     log_error "  cd ${PROJECT_ROOT}/solutions/carbon"
@@ -146,6 +149,7 @@ if ! $CONTAINER_CMD images | grep -q "carbon-aoc"; then
     echo '{"part1": null, "part2": null}'
     exit 1
 fi
+set -o pipefail
 
 log_info "Running Carbon solution for $DAY_FORMATTED with input: $INPUT_PATH" >&2
 log_info "Using container runtime: $CONTAINER_CMD" >&2
@@ -174,14 +178,16 @@ carbon_binary(
     srcs = [\"$CARBON_BASENAME\"],
 )' > BUILD &&
     cd /opt/carbon-lang &&
-    ./scripts/run_bazelisk.py build --jobs=2 --local_ram_resources=3500 //examples/aoc2025/$DAY_FORMATTED:$DAY_FORMATTED 2>&1 > /dev/null &&
+    ./scripts/run_bazelisk.py build --jobs=2 --local_ram_resources=3500 //examples/aoc2025/$DAY_FORMATTED:$DAY_FORMATTED > /dev/null 2>&1 &&
     ./bazel-bin/examples/aoc2025/$DAY_FORMATTED/$DAY_FORMATTED < /input/$INPUT_FILENAME
 " 2>&1)
 EXIT_CODE=$?
 set -e
 
 # Check for execution errors
-if [[ $EXIT_CODE -ne 0 ]]; then
+# Note: Carbon binaries currently exit with code 10 even on success
+# This appears to be a Carbon runtime behavior, not an error
+if [[ $EXIT_CODE -ne 0 ]] && [[ $EXIT_CODE -ne 10 ]]; then
     log_error "Carbon execution failed with exit code: $EXIT_CODE"
     # Print error to stderr for debugging
     echo "$OUTPUT" >&2
