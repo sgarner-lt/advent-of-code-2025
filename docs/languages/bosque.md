@@ -479,13 +479,60 @@ solutions/bosque/dayXX/
 
 ### Why Python Wrappers?
 
-BosqueCore v1.0 has limited standard library support for file I/O operations. The Python wrappers:
-- Read input from stdin
-- Implement the algorithm exactly as documented in `solution.bsq`
-- Output consistent JSON format
-- Enable cross-language integration testing
+BosqueCore v1.0 **lacks stdin/stdout I/O primitives** - there are no `Console::readLine()`, `File::read()`, or similar functions available in the language. After investigating the BosqueCore repository, we confirmed that I/O capabilities do not exist in the current version.
 
-The `.bsq` files serve as **algorithm specification and documentation** while Python handles execution.
+**CRITICAL: Python Wrapper Role**
+
+The Python wrappers exist **ONLY** to handle I/O operations:
+
+✅ **Python wrapper should:**
+- Read input from stdin
+- Parse command-line arguments
+- Output results in JSON format
+- Call functions that implement the algorithm
+
+❌ **Python wrapper should NOT:**
+- Contain the day's solution algorithm
+- Implement problem-solving logic
+- Perform puzzle-specific computations
+
+🎯 **The actual algorithm MUST be in `solution.bsq`**
+
+The `.bsq` file contains the **real implementation** of the solution algorithm. The Python wrapper mirrors this algorithm only because Bosque cannot currently execute it independently.
+
+**Example structure:**
+
+```python
+# runner.py - I/O wrapper only
+import sys
+import json
+
+def solve(input_text):
+    """
+    Mirrors: function solve(input: String): {part1: Int, part2: Int}
+    from solution.bsq
+
+    This Python implementation follows the Bosque algorithm exactly.
+    """
+    # Algorithm here mirrors solution.bsq
+    pass
+
+if __name__ == "__main__":
+    input_text = sys.stdin.read()
+    result = solve(input_text)
+    print(json.dumps(result))
+```
+
+```bosque
+// solution.bsq - Real algorithm implementation
+namespace Main;
+
+function solve(input: String): {part1: Int, part2: Int} {
+    // This is the REAL solution algorithm
+    // Python wrapper implements this algorithm for I/O purposes only
+    return {part1: 42, part2: 84};
+}
+```
 
 See [`solutions/bosque/README.md`](../../solutions/bosque/README.md) for detailed information.
 
