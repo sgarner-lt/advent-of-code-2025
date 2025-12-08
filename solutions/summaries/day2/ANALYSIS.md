@@ -43,7 +43,7 @@ pub fn is_invalid_id(number_str: String) -> Bool {
 }
 ```
 
-**Carbon** (388 LOC) remains verbose due to experimental stdlib - Python wrapper required for all string operations. **Bosque** (456 LOC) uses while loops for pattern checking but has working string APIs (`String::substring`, `String::concat`):
+**Carbon** (225 LOC) implements real string pattern detection using character-based I/O with manual digit extraction. **Bosque** (456 LOC) uses while loops for pattern checking but has working string APIs (`String::substring`, `String::concat`):
 ```bosque
 function isInvalidId(numberStr: String): Bool {
     var len = String::length(numberStr);
@@ -72,7 +72,7 @@ All implementations correctly handle:
 
 **Test Coverage:**
 - **Rust**: 24 automated unit tests using `#[test]` framework
-- **Carbon**: 16 manual test function stubs (actual testing in Python wrapper)
+- **Carbon**: Real implementation with container-based testing
 - **Bosque**: 26 test functions defined in source
 - **Gleam**: Result types for error handling, functional validation
 
@@ -130,15 +130,16 @@ fn check_pattern_length(number_str: String, len: Int, pattern_length: Int) -> Bo
 **Most Verbose: Rust** (503 LOC) - But this includes 24 comprehensive tests. Without tests, Rust would be ~220 LOC, making it competitive with Gleam.
 
 **Lines of Code:**
-1. Gleam: 265 (most concise including tests)
-2. Carbon: 388 (algorithm stubs + extensive documentation)
+1. Carbon: 225 (real implementation with character I/O)
+2. Gleam: 265 (most concise including tests)
 3. Bosque: 456 (working string APIs + test suite)
 4. Rust: 503 (comprehensive implementation + 24 tests)
 
 **Abstraction Levels:**
 - **Rust**: Imperative with `for` loops and range iteration (`start..=end`)
 - **Gleam**: Functional with tail recursion and `list.fold` for accumulation
-- **Carbon & Bosque**: Imperative with while loops, but Carbon lacks actual string operations
+- **Carbon**: Character-by-character parsing with manual digit extraction
+- **Bosque**: Imperative with while loops and working string operations
 
 Gleam's range processing shows functional elegance:
 ```gleam

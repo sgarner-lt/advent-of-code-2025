@@ -43,7 +43,7 @@ pub fn rotate(position: Int, direction: Direction, distance: Int) -> Int {
 }
 ```
 
-**Carbon** (523 LOC) is verbose due to experimental stdlib limitations, requiring extensive inline documentation and hardcoded input. **Bosque** (302 LOC) uses boolean-based direction (`isLeft: Bool`) which simplifies type handling but reduces clarity.
+**Carbon** (169 LOC) implements real rotation logic using character-based I/O with `Core.ReadChar()` and `Core.PrintChar()`. **Bosque** (302 LOC) uses boolean-based direction (`isLeft: Bool`) which simplifies type handling but reduces clarity.
 
 ## Correctness Evaluation
 
@@ -56,7 +56,7 @@ All implementations correctly handle:
 
 **Test Coverage:**
 - **Rust**: 16 automated unit tests using `#[test]` framework
-- **Carbon**: 16 manual test functions with `RunAllTests()` wrapper
+- **Carbon**: Real implementation with container-based testing
 - **Bosque**: 16 test functions (manual execution)
 - **Gleam**: Fewer explicit tests, relies on Result types for error handling
 
@@ -80,17 +80,13 @@ fn modulo(value: Int, divisor: Int) -> Int {
 
 **Most Concise: Gleam** (141 LOC) - Functional composition reduces boilerplate significantly.
 
-**Most Verbose: Carbon** (523 LOC) - Stdlib limitations forced:
-- Hardcoded sample input (no file I/O)
-- Manual test framework (no testing stdlib)
-- Extensive inline documentation to explain workarounds
-- Python wrapper required for actual execution
+**Most Verbose: Bosque** (302 LOC) - Verification-oriented design adds overhead.
 
 **Lines of Code:**
 1. Gleam: 141 (most concise)
-2. Rust: 264 (comprehensive but clean)
-3. Bosque: 302 (verification-oriented overhead)
-4. Carbon: 523 (experimental language overhead)
+2. Carbon: 169 (real implementation with character I/O)
+3. Rust: 264 (comprehensive but clean with tests)
+4. Bosque: 302 (verification-oriented overhead)
 
 **Abstraction Levels:**
 - **Rust & Carbon**: Struct/class-based with enums/choice types
@@ -111,10 +107,11 @@ fn modulo(value: Int, divisor: Int) -> Int {
 - Tuple pattern matching for instruction parsing
 
 **Carbon** leveraged:
-- Choice types (enum-like)
-- Inline documentation (compensating for experimental state)
-- C++ interop capability (mentioned but not used here)
-- Manual testing functions with structured test runner
+- Character-based I/O with `Core.ReadChar()` and `Core.PrintChar()`
+- Fixed-size arrays for data storage
+- Manual integer parsing from character input
+- Manual JSON output formatting character-by-character
+- Containerized Bazel build system
 
 **Bosque** leveraged:
 - Verification-oriented design
@@ -127,42 +124,44 @@ fn modulo(value: Int, divisor: Int) -> Int {
 **Ranking:**
 1. **Gleam** - Cleanest expression of the algorithm with minimal boilerplate
 2. **Rust** - Excellent balance of clarity, type safety, and explicitness
-3. **Bosque** - Functional approach clear but boolean direction less explicit than enums
-4. **Carbon** - Algorithm clarity buried under experimental language workarounds
+3. **Carbon** - Real character-based I/O implementation works but adds verbosity
+4. **Bosque** - Functional approach clear but boolean direction less explicit than enums
 
 **Key Factors:**
-- **Stdlib Support**: Rust and Gleam had complete I/O, string parsing, and testing. Carbon and Bosque required significant workarounds.
+- **Stdlib Support**: Rust and Gleam had complete I/O, string parsing, and testing. Carbon has Core library I/O but requires manual operations. Bosque required workarounds.
 - **Syntax Clarity**: Gleam's pipe operators and pattern matching made data flow obvious. Rust's enums made intent explicit.
-- **Boilerplate**: Carbon required Python wrapper + hardcoded input. Bosque needed try-catch fallbacks.
+- **Boilerplate**: Carbon requires character-by-character I/O and manual JSON formatting. Bosque needed try-catch fallbacks.
 
 ## Scalability Discussion
 
 **Viable for Future Days:**
 - **Rust**: Fully viable - comprehensive stdlib, mature tooling, excellent for complex problems
 - **Gleam**: Fully viable - functional style scales well, complete stdlib support
+- **Carbon**: Viable but verbose - character-based I/O works, requires manual implementation of operations
 
 **Limited Viability:**
-- **Carbon**: Experimental limitations are blocking - no file I/O or string stdlib makes daily puzzle solving impractical without Python wrappers
 - **Bosque**: Runtime constraints and stdlib gaps create friction - verification-oriented design is interesting but immature ecosystem limits practicality
 
 **Language Maturity Matters:**
 - Rust and Gleam solved Day 1 cleanly with zero workarounds
-- Carbon and Bosque both required Python wrapper scripts for file reading
+- Carbon uses character-based I/O which works but requires more code
+- Bosque required Python wrapper scripts for file reading
 - As AoC problems increase in complexity (Days 10-25), stdlib completeness becomes critical
 
 **Sustainability Concerns:**
-- Python wrappers add maintenance overhead and debugging friction
-- Hardcoded input (Carbon) is impractical for 25 days of puzzles
-- Manual testing frameworks don't scale to larger test suites
+- Character-by-character I/O (Carbon) adds development time
+- Manual JSON formatting increases boilerplate
+- Python wrappers (Bosque) add maintenance overhead and debugging friction
 
 ## Lessons Learned
 
 **Key Insights:**
-1. **Stdlib maturity matters more than syntax** - Carbon's syntax is fine, but lack of file I/O made it impractical
+1. **Stdlib maturity matters more than syntax** - Carbon's Core library works but requires manual implementation
 2. **Roc removal was correct** - Too experimental/unstable to maintain across 25 days
 3. **Functional vs imperative is preference** - Both Rust (imperative) and Gleam (functional) were excellent
-4. **Testing frameworks are essential** - Rust's integrated tests caught edge cases; manual testing in Carbon/Bosque is tedious
-5. **Python wrappers add friction** - Carbon and Bosque both needed wrappers, making them 2-language solutions instead of 1
+4. **Testing frameworks are essential** - Rust's integrated tests caught edge cases
+5. **Character I/O works but adds verbosity** - Carbon's real implementation requires more manual code than Rust/Gleam
+6. **Python wrappers add friction** - Bosque needs wrappers, making it a 2-language solution
 
 **Actionable Takeaways:**
 - Prioritize languages with mature stdlib and tooling for multi-day projects
@@ -171,4 +170,4 @@ fn modulo(value: Int, divisor: Int) -> Int {
 - Small LOC difference (141 vs 264) matters less than maintainability and clarity
 
 **Recommendation for Future Days:**
-Focus on **Rust** and **Gleam** for remaining days. Carbon and Bosque demonstrated interesting language features but practical limitations make them unsuitable for daily puzzle solving without significant infrastructure investment.
+Focus on **Rust** and **Gleam** for remaining days. **Carbon** has real implementations but adds development time due to character I/O. **Bosque** requires Python wrappers which add friction.

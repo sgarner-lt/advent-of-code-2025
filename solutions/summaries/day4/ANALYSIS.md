@@ -81,7 +81,7 @@ fn get_cell(grid: List(List(String)), row: Int, col: Int) -> Result(String, Nil)
 }
 ```
 
-**Carbon** (57 LOC stub) only outlines algorithm structure with no actual 2D array implementation - Python wrapper required. **Bosque** (510 LOC) uses manual while-loop iteration with record types for directions but has working List APIs:
+**Carbon** (206 LOC) implements real grid operations using character-based I/O with global arrays and explicit direction checking. **Bosque** (510 LOC) uses manual while-loop iteration with record types for directions but has working List APIs:
 ```bosque
 function countAdjacentRolls(grid: List<List<String>>, row: Int, col: Int): Int {
     var directions = List::create<{dr: Int, dc: Int}>();
@@ -119,7 +119,7 @@ All implementations correctly handle:
 
 **Test Coverage:**
 - **Rust**: 15 automated unit tests using `#[test]` framework
-- **Carbon**: Algorithm outline only - testing in Python wrapper
+- **Carbon**: Real implementation with container-based testing
 - **Bosque**: 14 test function stubs defined in source
 - **Gleam**: Functional validation with Result types, pattern matching for bounds
 
@@ -152,7 +152,7 @@ case list.at(grid, row) {
 **Most Verbose: Bosque** (510 LOC) - Manual while-loop iteration and extensive inline documentation (40 lines explaining grid algorithm).
 
 **Lines of Code:**
-1. Carbon: 57 (stub only - not a real implementation)
+1. Carbon: 206 (real implementation with character I/O)
 2. Gleam: 209 (most concise complete solution)
 3. Rust: 342 (comprehensive with 15 tests)
 4. Bosque: 510 (working implementation + extensive docs + 14 test stubs)
@@ -188,7 +188,11 @@ case list.at(grid, row) {
 - **Immutable grid updates**: Functional transformations instead of mutation (Part 2 not implemented in sample)
 
 **Carbon** leveraged:
-- **Nothing** - 57-line stub demonstrates algorithm INTENT only, no actual 2D array handling
+- **Global arrays for 2D grids**: `var grid: array(array(i32, 150), 150)` - avoids nested array parameter issues
+- **Character-based I/O**: `Core.ReadChar()` and `Core.PrintChar()` for stdin/stdout
+- **Explicit direction checking**: 8 if-statements instead of direction arrays (more reliable compilation)
+- **Manual JSON formatting**: Character-by-character output
+- **No trailing comments**: All comments must be on separate lines (Carbon syntax rule)
 
 **Bosque** leveraged:
 - **Record types for directions**: `{dr: Int, dc: Int}` - named fields clearer than tuples
@@ -207,8 +211,8 @@ case list.at(grid, row) {
 **Ranking:**
 1. **Gleam** - Clearest expression of 2D algorithms with functional patterns and safe indexing
 2. **Rust** - Excellent balance of clarity and performance; const direction arrays and direct indexing are idiomatic
-3. **Bosque** - Working List APIs enable correct implementation despite verbose while-loop iteration
-4. **Carbon** - No actual implementation - cannot evaluate
+3. **Carbon** - Real character-based I/O implementation; global arrays work but verbose
+4. **Bosque** - Working List APIs enable correct implementation despite verbose while-loop iteration
 
 **Grid Operation Winners:**
 - **2D Array Representation**: Rust's `Vec<Vec<char>>` is most idiomatic; Gleam's `List(List(String))` with graphemes is most explicit
@@ -218,31 +222,31 @@ case list.at(grid, row) {
 - **Coordinate Representation**: Bosque's record types (`{dr: Int, dc: Int}`) are most self-documenting; Rust's tuples are most concise
 
 **Key Factors:**
-- **Stdlib Support**: Rust had complete 2D vector support. Gleam had safe list access. Bosque had functional List APIs. Carbon had nothing.
-- **Indexing Safety**: Gleam's Result-based approach caught errors at compile time. Rust's direct indexing required runtime bounds checks.
-- **Nested Iteration**: Rust's `for`/`enumerate()` made 2D traversal obvious. Gleam's tail recursion was elegant but less familiar.
+- **Stdlib Support**: Rust had complete 2D vector support. Gleam had safe list access. Bosque had functional List APIs. Carbon had Core library I/O but limited stdlib.
+- **Indexing Safety**: Gleam's Result-based approach caught errors at compile time. Rust's direct indexing required runtime bounds checks. Carbon uses manual bounds checking.
+- **Nested Iteration**: Rust's `for`/`enumerate()` made 2D traversal obvious. Gleam's tail recursion was elegant. Carbon uses manual while loops.
 
 ## Scalability Discussion
 
 **Viable for Future Grid Problems:**
 - **Rust**: Fully viable - comprehensive 2D vector support, direct indexing, excellent for pathfinding/maze algorithms
 - **Gleam**: Fully viable - safe list access scales well, functional style handles complex spatial transformations
+- **Carbon**: Viable but verbose - global arrays work, character I/O works, but manual implementation of all operations
 
 **Limited Viability:**
-- **Carbon**: Non-viable for grid problems - no native 2D array support makes spatial algorithms impossible without Python wrapper
 - **Bosque**: Partially viable - working List APIs enable grid algorithms, but manual while-loop iteration is tedious for complex spatial navigation
 
 **Grid Complexity Impact:**
 - Day 4's 2D arrays revealed **stdlib maturity gaps** more clearly than Days 1-3
 - Rust and Gleam handled grid traversal with zero workarounds
 - Bosque's List APIs proved functional but verbose (510 LOC vs Gleam's 209 LOC)
-- Carbon completely failed at spatial problems - Python wrapper requirement is blocking
+- Carbon required workarounds (global arrays, character I/O, manual JSON) but now has real implementation (206 LOC)
 
 **Future Considerations for Grid-Heavy Days:**
 - Pathfinding algorithms (BFS/DFS) will benefit from Rust's performance and Gleam's safe indexing
 - Maze generation/solving requires efficient 2D mutation (Rust advantage) or functional updates (Gleam advantage)
 - Graph problems with spatial coordinates will test Bosque's record types vs Rust/Gleam's tuples
-- Carbon should be skipped for any problems requiring 2D data structures
+- Carbon's global array approach works but adds development friction
 
 ## Lessons Learned
 
@@ -255,19 +259,21 @@ case list.at(grid, row) {
 6. **Grid visualization generation is valuable** - Rust's character substitution (`'x'` for accessible) provides debugging insight
 
 **What Day 4 Revealed (Not Apparent in Days 1-3):**
-- **2D data structure handling differences**: Rust uses native vectors, Gleam uses lists, Bosque uses List APIs, Carbon has nothing
+- **2D data structure handling differences**: Rust uses native vectors, Gleam uses lists, Bosque uses List APIs, Carbon uses fixed-size global arrays
 - **Coordinate system choices matter**: Signed vs unsigned arithmetic affects bounds checking clarity
 - **Spatial adjacency algorithms test stdlib completeness**: 8-direction iteration requires functional list access or vector indexing
-- **Immutable vs mutable grid updates**: Part 2's iterative removal tested language approaches - Rust clones vectors, Gleam would use functional transforms, Bosque uses recursion
+- **Immutable vs mutable grid updates**: Part 2's iterative removal tested language approaches - Rust clones vectors, Gleam would use functional transforms, Bosque uses recursion, Carbon modifies globals
+- **Carbon trailing comment restriction**: Day 4 revealed Carbon doesn't allow `// comment` after code on same line
 
 **Actionable Takeaways:**
 - Use const/static direction arrays for reusable spatial navigation patterns
 - Prefer Result-based indexing (Gleam) for correctness-critical code, direct indexing (Rust) for performance-critical code
 - Tail recursion (Gleam) and nested `for` loops (Rust) are equally valid for 2D iteration
 - Record types (Bosque) improve readability for complex coordinates; tuples suffice for simple (row, col) pairs
-- Carbon should be deprioritized for any grid-based problems until native 2D array support exists
+- Carbon global arrays work but require careful planning; character I/O is verbose but functional
+- Carbon comments must be on separate lines - no trailing `// comment` syntax allowed
 
 **Recommendation for Future Days:**
-Focus on **Rust** for performance-critical spatial algorithms (pathfinding, maze solving) and **Gleam** for correctness-critical grid transformations (immutable updates, safe indexing). **Bosque** is viable for algorithm demonstration but verbose. **Carbon** should be skipped for any Day requiring 2D data structures.
+Focus on **Rust** for performance-critical spatial algorithms (pathfinding, maze solving) and **Gleam** for correctness-critical grid transformations (immutable updates, safe indexing). **Bosque** is viable for algorithm demonstration but verbose. **Carbon** is viable but adds development overhead due to character-based I/O and manual operations.
 
-**Revised Assessment:** Day 4 confirmed Rust and Gleam as primary languages for complex problems. Bosque's List APIs work but are tedious. Carbon's experimental status makes it unsuitable for spatial algorithms.
+**Revised Assessment:** Day 4 confirmed Rust and Gleam as primary languages for complex problems. Bosque's List APIs work but are tedious. Carbon's real implementation works but requires significant manual effort for basic operations.
