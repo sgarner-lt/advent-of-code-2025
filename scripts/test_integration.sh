@@ -156,6 +156,9 @@ main() {
         exit 1
     fi
 
+    # Clean up any stale containers from previous runs
+    cleanup_stale_containers
+
     # Run all languages in parallel
     log_info "Launching parallel test execution..."
     echo ""

@@ -50,6 +50,32 @@ cleanup_test_output_dir() {
     fi
 }
 
+# Clean up any stale Carbon containers from previous runs
+# Usage: cleanup_stale_containers
+cleanup_stale_containers() {
+    local container_cmd=""
+
+    if command -v podman &> /dev/null; then
+        container_cmd="podman"
+    elif command -v docker &> /dev/null; then
+        container_cmd="docker"
+    else
+        return 0
+    fi
+
+    # Find and stop any running carbon-aoc containers
+    local stale_containers
+    stale_containers=$($container_cmd ps --filter "ancestor=carbon-aoc:day1" --format "{{.ID}}" 2>/dev/null || true)
+
+    if [[ -n "$stale_containers" ]]; then
+        log_info "Cleaning up stale Carbon containers..."
+        echo "$stale_containers" | while read -r container_id; do
+            $container_cmd stop "$container_id" >/dev/null 2>&1 || true
+            log_info "Stopped stale container: $container_id"
+        done
+    fi
+}
+
 
 # Execute a single language test
 # Usage: run_language_test <language> <day_number> <input_path>

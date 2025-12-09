@@ -90,7 +90,7 @@
 ## Phase 6: Day 6 Solutions
 *Problem releases December 6th at midnight EST*
 
-19. [ ] Day 6 Part 1 — Implement Part 1 solution in all 4 languages with cross-language validation `M`
+19. [x] Day 6 Part 1 — Implement Part 1 solution in all 4 languages with cross-language validation `M`
 
 20. [ ] Day 6 Part 2 — Implement Part 2 solution in all 4 languages with cross-language validation `M`
 

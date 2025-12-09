@@ -1,0 +1,339 @@
+namespace Main;
+
+// Advent of Code 2025 Day 6 - Trash Compactor Math Worksheet
+//
+// IMPORTANT: Bosque is a Microsoft Research language with limited stdlib
+// This implementation follows the spec but requires a Python wrapper
+// for file I/O and execution due to BosqueCore limitations.
+//
+// Algorithm:
+// 1. Parse vertical math problems from horizontal row input
+// 2. Split on whitespace, trim numbers before parsing
+// 3. Identify columns as separate problems
+// 4. Apply operations (* or +) to each problem's numbers
+// 5. Sum all problem results for grand total
+//
+// Input format:
+// - Multiple rows of numbers separated by whitespace
+// - Last row contains operation symbols (* or +)
+// - Each vertical column represents one problem
+//
+// Example:
+// 123 328  51 64
+//  45 64  387 23
+//   6 98  215 314
+// *   +   *   +
+//
+// This represents four problems:
+// - 123 * 45 * 6 = 33210
+// - 328 + 64 + 98 = 490
+// - 51 * 387 * 215 = 4243455
+// - 64 + 23 + 314 = 401
+// Grand total: 4277556
+
+// Parse input into a 2D list of strings (rows and columns)
+// Each line is split on whitespace
+function parseInput(input: String): List<List<String>> {
+    var lines = String::split(input, "\n");
+    var rows = List::create<List<String>>();
+
+    var i = 0i;
+    while(i < List::size<String>(lines)) {
+        var line = List::get<String>(lines, i);
+        var parts = String::split(line, " ");
+
+        // Filter out empty strings and trim
+        var row = List::create<String>();
+        var j = 0i;
+        while(j < List::size<String>(parts)) {
+            var part = String::trim(List::get<String>(parts, j));
+            if(String::length(part) > 0i) {
+                row = List::add<String>(row, part);
+            }
+            j = j + 1i;
+        }
+
+        if(List::size<String>(row) > 0i) {
+            rows = List::add<List<String>>(rows, row);
+        }
+
+        i = i + 1i;
+    }
+
+    return rows;
+}
+
+// Identify vertical problems by transposing rows into columns
+function identifyProblems(rows: List<List<String>>): List<List<String>> {
+    if(List::size<List<String>>(rows) == 0i) {
+        return List::create<List<String>>();
+    }
+
+    // Find max columns
+    var maxCols = 0i;
+    var i = 0i;
+    while(i < List::size<List<String>>(rows)) {
+        var row = List::get<List<String>>(rows, i);
+        var len = List::size<String>(row);
+        if(len > maxCols) {
+            maxCols = len;
+        }
+        i = i + 1i;
+    }
+
+    // Transpose rows into columns
+    var problems = List::create<List<String>>();
+    var col = 0i;
+    while(col < maxCols) {
+        var column = List::create<String>();
+        var row = 0i;
+        while(row < List::size<List<String>>(rows)) {
+            var rowData = List::get<List<String>>(rows, row);
+            if(col < List::size<String>(rowData)) {
+                var val = List::get<String>(rowData, col);
+                column = List::add<String>(column, val);
+            }
+            row = row + 1i;
+        }
+
+        if(List::size<String>(column) > 0i) {
+            problems = List::add<List<String>>(problems, column);
+        }
+        col = col + 1i;
+    }
+
+    return problems;
+}
+
+// Extract operation symbol from the last element of a problem column
+function extractOperation(problem: List<String>): String? {
+    if(List::size<String>(problem) == 0i) {
+        return none;
+    }
+
+    var last = List::get<String>(problem, List::size<String>(problem) - 1i);
+    var firstChar = String::charAt(last, 0i);
+
+    if(firstChar == "*" || firstChar == "+") {
+        return firstChar;
+    }
+
+    return none;
+}
+
+// Calculate the result of a problem by applying the operation to all numbers
+function calculateProblem(problem: List<String>, operation: String): Int? {
+    if(List::size<String>(problem) < 2i) {
+        return none;
+    }
+
+    // Parse all numbers (all elements except the last one)
+    var numbers = List::create<Int>();
+    var i = 0i;
+    while(i < List::size<String>(problem) - 1i) {
+        var numStr = String::trim(List::get<String>(problem, i));
+        var num = String::parseInt(numStr);
+
+        if(num != none) {
+            numbers = List::add<Int>(numbers, num);
+        }
+
+        i = i + 1i;
+    }
+
+    if(List::size<Int>(numbers) == 0i) {
+        return none;
+    }
+
+    // Apply the operation
+    var result = List::get<Int>(numbers, 0i);
+    var j = 1i;
+
+    if(operation == "*") {
+        // Multiplication
+        while(j < List::size<Int>(numbers)) {
+            var num = List::get<Int>(numbers, j);
+            result = result * num;
+            j = j + 1i;
+        }
+    } else if(operation == "+") {
+        // Addition
+        while(j < List::size<Int>(numbers)) {
+            var num = List::get<Int>(numbers, j);
+            result = result + num;
+            j = j + 1i;
+        }
+    }
+
+    return result;
+}
+
+// Solve the puzzle: parse input, identify problems, calculate each, and sum results
+function solve(input: String): {part1: Int, part2: Int} {
+    // Parse input into rows
+    var rows = parseInput(input);
+
+    if(List::size<List<String>>(rows) == 0i) {
+        return {part1: 0i, part2: 0i};
+    }
+
+    // Identify vertical problems (transpose to columns)
+    var problems = identifyProblems(rows);
+
+    if(List::size<List<String>>(problems) == 0i) {
+        return {part1: 0i, part2: 0i};
+    }
+
+    // Calculate each problem and sum results
+    var grandTotal = 0i;
+    var i = 0i;
+
+    while(i < List::size<List<String>>(problems)) {
+        var problem = List::get<List<String>>(problems, i);
+        var operation = extractOperation(problem);
+
+        if(operation != none) {
+            var result = calculateProblem(problem, operation);
+            if(result != none) {
+                grandTotal = grandTotal + result;
+            }
+        }
+
+        i = i + 1i;
+    }
+
+    return {part1: grandTotal, part2: 0i};
+}
+
+// Main entry point
+entrypoint function main(args: List<String>): Int {
+    var inputContent = "";
+
+    // Read file path from command-line arguments
+    if(List::size<String>(args) > 1i) {
+        var filePath = List::get<String>(args, 1i);
+
+        // WORKAROUND: Bosque file I/O is not available
+        // The Python runner wrapper handles file reading and execution
+        try {
+            inputContent = Environment::readFile(filePath);
+        }
+        catch {
+            // Fallback: try reading from stdin
+            inputContent = Console::readAll();
+        }
+    }
+
+    var result = solve(inputContent);
+
+    // Output JSON format for cross-language validation
+    var output = String::concat(
+        "{\"part1\": ",
+        Int::toString(result.part1),
+        ", \"part2\": null}"
+    );
+    Console::writeLine(output);
+
+    return 0i;
+}
+
+// === UNIT TESTS ===
+// Note: These test signatures demonstrate the expected behavior.
+// Actual tests are implemented in Python
+
+// Test 1: Parse simple input
+function test_parseInputSimple(): Bool {
+    var input = "123 328\n45 64\n* +";
+    var rows = parseInput(input);
+    _assert(List::size<List<String>>(rows) == 3i);
+    return true;
+}
+
+// Test 2: Identify problems from sample data
+function test_identifyProblems(): Bool {
+    var rows = List::create<List<String>>();
+    var row1 = List::add<String>(List::create<String>(), "123");
+    row1 = List::add<String>(row1, "328");
+    var row2 = List::add<String>(List::create<String>(), "45");
+    row2 = List::add<String>(row2, "64");
+    var row3 = List::add<String>(List::create<String>(), "*");
+    row3 = List::add<String>(row3, "+");
+
+    rows = List::add<List<String>>(rows, row1);
+    rows = List::add<List<String>>(rows, row2);
+    rows = List::add<List<String>>(rows, row3);
+
+    var problems = identifyProblems(rows);
+    _assert(List::size<List<String>>(problems) == 2i);
+    return true;
+}
+
+// Test 3: Extract multiplication operation
+function test_extractOperationMultiply(): Bool {
+    var problem = List::create<String>();
+    problem = List::add<String>(problem, "123");
+    problem = List::add<String>(problem, "45");
+    problem = List::add<String>(problem, "*");
+
+    var op = extractOperation(problem);
+    _assert(op != none);
+    _assert(op == "*");
+    return true;
+}
+
+// Test 4: Extract addition operation
+function test_extractOperationAdd(): Bool {
+    var problem = List::create<String>();
+    problem = List::add<String>(problem, "328");
+    problem = List::add<String>(problem, "64");
+    problem = List::add<String>(problem, "+");
+
+    var op = extractOperation(problem);
+    _assert(op != none);
+    _assert(op == "+");
+    return true;
+}
+
+// Test 5: Calculate multiplication problem
+function test_calculateProblemMultiply(): Bool {
+    var problem = List::create<String>();
+    problem = List::add<String>(problem, "123");
+    problem = List::add<String>(problem, "45");
+    problem = List::add<String>(problem, "6");
+    problem = List::add<String>(problem, "*");
+
+    var result = calculateProblem(problem, "*");
+    _assert(result != none);
+    _assert(result == 33210i);
+    return true;
+}
+
+// Test 6: Calculate addition problem
+function test_calculateProblemAdd(): Bool {
+    var problem = List::create<String>();
+    problem = List::add<String>(problem, "328");
+    problem = List::add<String>(problem, "64");
+    problem = List::add<String>(problem, "98");
+    problem = List::add<String>(problem, "+");
+
+    var result = calculateProblem(problem, "+");
+    _assert(result != none);
+    _assert(result == 490i);
+    return true;
+}
+
+// Test 7: Sample input produces expected result (4277556)
+function test_sampleInput(): Bool {
+    var sample = "123 328  51 64\n 45 64  387 23\n  6 98  215 314\n*   +   *   +  ";
+    var result = solve(sample);
+    _assert(result.part1 == 4277556i);
+    return true;
+}
+
+// Test 8: Small example
+function test_smallExample(): Bool {
+    var sample = "10 20\n5 10\n* +";
+    var result = solve(sample);
+    _assert(result.part1 == 80i);
+    return true;
+}
