@@ -78,7 +78,7 @@
 
 16. [x] Day 5 Part 1 — Implement Part 1 solution in all 4 languages with cross-language validation `M`
 
-17. [ ] Day 5 Part 2 — Implement Part 2 solution in all 4 languages with cross-language validation `M`
+17. [x] Day 5 Part 2 — Implement Part 2 solution in all 4 languages with cross-language validation `M`
 
 18. [ ] Day 5 Analysis — Compare approaches and document language-specific observations `XS`
 

@@ -9,8 +9,9 @@ Test coverage:
 - 3 parsing unit tests (range parsing, ID parsing)
 - 3 freshness checking unit tests
 - 2 integration tests (sample input, edge cases)
+- 3 Part 2 tests (unique ID counting)
 
-Total: 8 tests
+Total: 11 tests
 """
 
 import unittest
@@ -92,11 +93,36 @@ class TestFreshnessChecking(unittest.TestCase):
         self.assertFalse(runner.is_fresh(5, ranges))
 
 
+class TestPart2UniqueIdCounting(unittest.TestCase):
+    """Test Part 2 unique ID counting logic"""
+
+    def test_count_unique_ids_single_range(self):
+        """Test counting unique IDs in a single range"""
+        ranges = [(3, 5)]
+        count = runner.count_unique_ids(ranges)
+        self.assertEqual(count, 3)  # IDs: 3, 4, 5
+
+    def test_count_unique_ids_overlapping_ranges(self):
+        """Test counting unique IDs with overlapping ranges"""
+        ranges = [(12, 18), (16, 20)]
+        count = runner.count_unique_ids(ranges)
+        # IDs: 12, 13, 14, 15, 16, 17, 18, 19, 20 = 9 unique IDs
+        self.assertEqual(count, 9)
+
+    def test_count_unique_ids_sample_input(self):
+        """Test counting unique IDs from sample input ranges"""
+        ranges = [(3, 5), (10, 14), (16, 20), (12, 18)]
+        count = runner.count_unique_ids(ranges)
+        # IDs: 3,4,5 (3 IDs) + 10,11,12,13,14 (5 IDs) + 12,13,14,15,16,17,18,19,20 (merged to 9 unique)
+        # Total unique: 3, 4, 5, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 = 14 unique IDs
+        self.assertEqual(count, 14)
+
+
 class TestIntegration(unittest.TestCase):
     """Integration tests"""
 
-    def test_sample_input(self):
-        """Test with sample input - expected part1=3"""
+    def test_sample_input_part1_and_part2(self):
+        """Test with sample input - expected part1=3, part2=14"""
         sample_input = """3-5
 10-14
 16-20
@@ -110,7 +136,7 @@ class TestIntegration(unittest.TestCase):
 32"""
         result = runner.solve(sample_input)
         self.assertEqual(result['part1'], 3)
-        self.assertIsNone(result['part2'])
+        self.assertEqual(result['part2'], 14)
 
     def test_sample_input_breakdown(self):
         """Test sample input with detailed breakdown"""
@@ -152,6 +178,7 @@ def run_tests():
     # Add all test classes
     suite.addTests(loader.loadTestsFromTestCase(TestParsing))
     suite.addTests(loader.loadTestsFromTestCase(TestFreshnessChecking))
+    suite.addTests(loader.loadTestsFromTestCase(TestPart2UniqueIdCounting))
     suite.addTests(loader.loadTestsFromTestCase(TestIntegration))
 
     # Run tests with verbose output

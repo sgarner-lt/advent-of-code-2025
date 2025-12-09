@@ -76,6 +76,11 @@ var num_ranges: i32 = 0;
 var ids: array(i64, 2000);
 var num_ids: i32 = 0;
 
+// Storage for merged ranges (Part 2)
+var merged_starts: array(i64, 200);
+var merged_ends: array(i64, 200);
+var num_merged: i32 = 0;
+
 fn ReadRanges() {
   num_ranges = 0;
   while (true) {
@@ -142,10 +147,80 @@ fn CountFresh() -> i32 {
   return fresh_count;
 }
 
+// Simple bubble sort to sort ranges by start position
+fn SortRangesByStart() {
+  for (i: i32 in Core.Range(num_ranges)) {
+    for (j: i32 in Core.Range(num_ranges - 1)) {
+      if (range_starts[j] > range_starts[j + 1]) {
+        // Swap starts
+        let temp_start: i64 = range_starts[j];
+        range_starts[j] = range_starts[j + 1];
+        range_starts[j + 1] = temp_start;
+
+        // Swap ends
+        let temp_end: i64 = range_ends[j];
+        range_ends[j] = range_ends[j + 1];
+        range_ends[j + 1] = temp_end;
+      }
+    }
+  }
+}
+
+// Merge overlapping ranges and count unique IDs
+fn CountUniqueIds() -> i64 {
+  if (num_ranges == 0) {
+    return 0;
+  }
+
+  // Sort ranges by start position
+  SortRangesByStart();
+
+  // Merge overlapping ranges
+  num_merged = 0;
+  merged_starts[0] = range_starts[0];
+  merged_ends[0] = range_ends[0];
+  num_merged = 1;
+
+  for (i: i32 in Core.Range(num_ranges)) {
+    if (i == 0) {
+      continue;
+    }
+
+    let current_start: i64 = range_starts[i];
+    let current_end: i64 = range_ends[i];
+    let last_idx: i32 = num_merged - 1;
+    let last_start: i64 = merged_starts[last_idx];
+    let last_end: i64 = merged_ends[last_idx];
+
+    // Check if current range overlaps or is adjacent to last merged range
+    if (current_start <= last_end + 1) {
+      // Merge by extending the end if needed
+      if (current_end > last_end) {
+        merged_ends[last_idx] = current_end;
+      }
+    } else {
+      // No overlap, add as new merged range
+      merged_starts[num_merged] = current_start;
+      merged_ends[num_merged] = current_end;
+      ++num_merged;
+    }
+  }
+
+  // Count total unique IDs across merged ranges
+  var total: i64 = 0;
+  for (i: i32 in Core.Range(num_merged)) {
+    let count: i64 = merged_ends[i] - merged_starts[i] + 1;
+    total = total + count;
+  }
+
+  return total;
+}
+
 fn Run() {
   ReadRanges();
   ReadIds();
   let fresh_count: i32 = CountFresh();
+  let unique_count: i64 = CountUniqueIds();
 
   // Output JSON
   Core.PrintChar('{');
@@ -170,10 +245,7 @@ fn Run() {
   Core.PrintChar('"');
   Core.PrintChar(':');
   Core.PrintChar(' ');
-  Core.PrintChar('n');
-  Core.PrintChar('u');
-  Core.PrintChar('l');
-  Core.PrintChar('l');
+  PrintInt64NoNewline(unique_count);
   Core.PrintChar('}');
   Core.PrintChar('\n');
 }

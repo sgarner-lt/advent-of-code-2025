@@ -1,4 +1,5 @@
 use std::io::{self, Read};
+use std::collections::HashSet;
 
 fn main() {
     // Read input from stdin
@@ -60,9 +61,60 @@ fn is_fresh(id: i64, ranges: &[(i64, i64)]) -> bool {
     false
 }
 
+/// Merge overlapping ranges and count unique IDs
+/// For small ranges (< 100k IDs), uses HashSet for exact counting
+/// For large ranges, merges intervals and counts mathematically
+fn count_unique_ids(ranges: &[(i64, i64)]) -> i64 {
+    if ranges.is_empty() {
+        return 0;
+    }
+
+    // Calculate total potential IDs across all ranges
+    let total_ids: i64 = ranges.iter().map(|(start, end)| end - start + 1).sum();
+
+    // For small datasets (< 100k IDs total), use HashSet approach for simplicity
+    if total_ids < 100_000 {
+        let mut unique_ids = HashSet::new();
+        for &(start, end) in ranges {
+            for id in start..=end {
+                unique_ids.insert(id);
+            }
+        }
+        return unique_ids.len() as i64;
+    }
+
+    // For large datasets, merge overlapping intervals and count mathematically
+    // Sort ranges by start position
+    let mut sorted_ranges = ranges.to_vec();
+    sorted_ranges.sort_by_key(|r| r.0);
+
+    // Merge overlapping intervals
+    let mut merged: Vec<(i64, i64)> = Vec::new();
+    for &(start, end) in &sorted_ranges {
+        if merged.is_empty() {
+            merged.push((start, end));
+        } else {
+            let last_idx = merged.len() - 1;
+            let (last_start, last_end) = merged[last_idx];
+
+            // Check if current range overlaps or is adjacent to last merged range
+            if start <= last_end + 1 {
+                // Merge by extending the end if needed
+                merged[last_idx] = (last_start, last_end.max(end));
+            } else {
+                // No overlap, add as new range
+                merged.push((start, end));
+            }
+        }
+    }
+
+    // Count total unique IDs across merged ranges
+    merged.iter().map(|(start, end)| end - start + 1).sum()
+}
+
 /// Parse the input and count fresh ingredients
-/// Returns (part1_count, part2_result) where part2_result is None for now
-fn solve(input: &str) -> Result<(i64, String), String> {
+/// Returns (part1_count, part2_count)
+fn solve(input: &str) -> Result<(i64, i64), String> {
     // Split input into two groups separated by blank line
     let groups: Vec<&str> = input.split("\n\n").collect();
 
@@ -96,7 +148,7 @@ fn solve(input: &str) -> Result<(i64, String), String> {
         }
     }
 
-    // Count how many available IDs are fresh
+    // Part 1: Count how many available IDs are fresh
     let mut fresh_count = 0;
     for id in available_ids {
         if is_fresh(id, &ranges) {
@@ -104,7 +156,10 @@ fn solve(input: &str) -> Result<(i64, String), String> {
         }
     }
 
-    Ok((fresh_count, "null".to_string()))
+    // Part 2: Count unique ingredient IDs across all ranges
+    let unique_count = count_unique_ids(&ranges);
+
+    Ok((fresh_count, unique_count))
 }
 
 #[cfg(test)]
@@ -186,8 +241,9 @@ mod tests {
 11
 17
 32";
-        let (part1, _) = solve(input).unwrap();
+        let (part1, part2) = solve(input).unwrap();
         assert_eq!(part1, 3);
+        assert_eq!(part2, 14);
     }
 
     #[test]
@@ -201,7 +257,78 @@ mod tests {
         let input = "3-5
 
 ";
-        let (part1, _) = solve(input).unwrap();
+        let (part1, part2) = solve(input).unwrap();
         assert_eq!(part1, 0);
+        assert_eq!(part2, 3); // Range 3-5 has 3 unique IDs
+    }
+
+    // Part 2 specific tests
+    #[test]
+    fn test_count_unique_ids_single_range() {
+        let ranges = vec![(3, 5)];
+        let count = count_unique_ids(&ranges);
+        assert_eq!(count, 3); // IDs: 3, 4, 5
+    }
+
+    #[test]
+    fn test_count_unique_ids_multiple_ranges() {
+        let ranges = vec![(3, 5), (10, 14)];
+        let count = count_unique_ids(&ranges);
+        assert_eq!(count, 8); // IDs: 3, 4, 5, 10, 11, 12, 13, 14
+    }
+
+    #[test]
+    fn test_count_unique_ids_overlapping_ranges() {
+        let ranges = vec![(12, 18), (16, 20)];
+        let count = count_unique_ids(&ranges);
+        assert_eq!(count, 9); // IDs: 12, 13, 14, 15, 16, 17, 18, 19, 20 (no duplicates)
+    }
+
+    #[test]
+    fn test_count_unique_ids_sample_input_ranges() {
+        let ranges = vec![(3, 5), (10, 14), (16, 20), (12, 18)];
+        let count = count_unique_ids(&ranges);
+        assert_eq!(count, 14); // IDs: 3,4,5,10,11,12,13,14,15,16,17,18,19,20
+    }
+
+    #[test]
+    fn test_count_unique_ids_empty() {
+        let ranges: Vec<(i64, i64)> = vec![];
+        let count = count_unique_ids(&ranges);
+        assert_eq!(count, 0);
+    }
+
+    #[test]
+    fn test_count_unique_ids_single_point_range() {
+        let ranges = vec![(5, 5)];
+        let count = count_unique_ids(&ranges);
+        assert_eq!(count, 1); // Only ID 5
+    }
+
+    #[test]
+    fn test_count_unique_ids_adjacent_ranges() {
+        let ranges = vec![(3, 5), (6, 8)];
+        let count = count_unique_ids(&ranges);
+        assert_eq!(count, 6); // IDs: 3, 4, 5, 6, 7, 8
+    }
+
+    #[test]
+    fn test_count_unique_ids_large_ranges() {
+        // Test with very large ranges that would be impractical to enumerate
+        let ranges = vec![(1, 1_000_000), (500_000, 1_500_000)];
+        let count = count_unique_ids(&ranges);
+        // Range 1-1000000 has 1,000,000 IDs
+        // Range 500000-1500000 overlaps from 500000-1000000 (500,001 IDs overlap)
+        // So unique IDs = 1,000,000 + 500,000 = 1,500,000
+        assert_eq!(count, 1_500_000);
+    }
+
+    #[test]
+    fn test_count_unique_ids_multiple_overlaps() {
+        // Test case with multiple overlapping ranges
+        let ranges = vec![(1, 10), (5, 15), (12, 20), (18, 25)];
+        let count = count_unique_ids(&ranges);
+        // After merging: (1, 25) = 25 unique IDs
+        assert_eq!(count, 25);
     }
 }

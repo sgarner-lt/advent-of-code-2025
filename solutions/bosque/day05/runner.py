@@ -19,12 +19,13 @@ Algorithm:
 - Parse two groups from input separated by blank line
 - Group 1: Fresh ingredient ID ranges (format: "start-end")
 - Group 2: Available ingredient IDs (single numbers)
-- For each available ID, check if it falls within any fresh range
-- Count and return the number of fresh ingredients
+- Part 1: For each available ID, check if it falls within any fresh range
+- Part 2: Count unique ingredient IDs across all ranges using interval merging
+- Return both results in JSON format
 
 Expected results:
-- Sample input: {"part1": 3, "part2": null}
-- Real input: {"part1": <to be determined>, "part2": null}
+- Sample input: {"part1": 3, "part2": 14}
+- Real input: {"part1": <to be determined>, "part2": <to be determined>}
 """
 
 import sys
@@ -119,6 +120,65 @@ def is_fresh(ingredient_id, ranges):
     return False
 
 
+def count_unique_ids(ranges):
+    """
+    Count unique ingredient IDs across all ranges
+    Handles overlapping ranges by merging intervals
+
+    Algorithm:
+    1. Sort ranges by start position
+    2. Merge overlapping/adjacent ranges
+    3. Sum the counts of IDs in each merged range
+
+    Args:
+        ranges: List of (start, end) tuples representing fresh ranges
+
+    Returns:
+        Total count of unique ingredient IDs across all ranges
+
+    Mirrors: function countUniqueIds(ranges: List<{start: Int, end: Int}>): Int
+
+    Example:
+        Ranges: [(3, 5), (10, 14), (16, 20), (12, 18)]
+        After sorting: [(3, 5), (10, 14), (12, 18), (16, 20)]
+        After merging: [(3, 5), (10, 20)]
+          - (10, 14) and (12, 18) merge to (10, 18)
+          - (10, 18) and (16, 20) merge to (10, 20)
+        Count: (5-3+1) + (20-10+1) = 3 + 11 = 14
+    """
+    # Handle empty ranges
+    if not ranges:
+        return 0
+
+    # Sort ranges by start position
+    sorted_ranges = sorted(ranges, key=lambda r: r[0])
+
+    # Merge overlapping ranges
+    merged = []
+    current_start, current_end = sorted_ranges[0]
+
+    for start, end in sorted_ranges[1:]:
+        # Check if current range overlaps or is adjacent to the last merged range
+        if start <= current_end + 1:
+            # Merge by extending the end if needed
+            current_end = max(current_end, end)
+        else:
+            # No overlap, save the current merged range and start a new one
+            merged.append((current_start, current_end))
+            current_start, current_end = start, end
+
+    # Don't forget to add the last merged range
+    merged.append((current_start, current_end))
+
+    # Count total unique IDs across merged ranges
+    total = 0
+    for start, end in merged:
+        count = end - start + 1
+        total += count
+
+    return total
+
+
 def solve(input_text):
     """
     Main solution function that processes input and counts fresh ingredients
@@ -127,23 +187,24 @@ def solve(input_text):
     1. Split input into two groups separated by blank line
     2. Parse Group 1 as ranges (format: "start-end")
     3. Parse Group 2 as available IDs (single numbers)
-    4. For each available ID, check if it's fresh using is_fresh()
-    5. Count and return the number of fresh ingredients
+    4. Part 1: For each available ID, check if it's fresh using is_fresh()
+    5. Part 2: Count unique IDs across all ranges using count_unique_ids()
+    6. Return both results
 
     Args:
         input_text: Complete input string with two groups separated by blank line
 
     Returns:
-        Dictionary with 'part1' (count of fresh ingredients) and 'part2' (null)
+        Dictionary with 'part1' (count of fresh ingredients) and 'part2' (count of unique IDs)
 
-    Mirrors: function solve(input: String): {part1: Int, part2: Int?}
+    Mirrors: function solve(input: String): {part1: Int, part2: Int}
     """
     # Split input into two groups by blank line
     groups = input_text.split('\n\n')
 
     if len(groups) != 2:
         # Invalid input format
-        return {'part1': 0, 'part2': None}
+        return {'part1': 0, 'part2': 0}
 
     # Parse Group 1: Fresh ingredient ranges
     ranges_text = groups[0]
@@ -165,14 +226,17 @@ def solve(input_text):
         if ingredient_id is not None:
             ids.append(ingredient_id)
 
-    # Count fresh ingredients
+    # Part 1: Count fresh ingredients
     fresh_count = 0
 
     for ingredient_id in ids:
         if is_fresh(ingredient_id, ranges):
             fresh_count += 1
 
-    return {'part1': fresh_count, 'part2': None}
+    # Part 2: Count unique ingredient IDs across all ranges
+    unique_count = count_unique_ids(ranges)
+
+    return {'part1': fresh_count, 'part2': unique_count}
 
 
 def main():
