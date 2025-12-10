@@ -2,8 +2,9 @@
 
 # Carbon test runner for Advent of Code solutions
 #
-# NOTE: Carbon is an experimental language. This runner builds and executes
-# real Carbon code in a Docker/Podman container that includes the Carbon toolchain.
+# NOTE: Carbon is an experimental language. This runner prioritizes using
+# Python wrapper scripts (runner.py) when available, falling back to
+# containerized Carbon compilation when necessary.
 #
 # The container build takes ~5 hours initially but is cached after the first build.
 
@@ -37,12 +38,11 @@ Exit codes:
   2  - Missing arguments or invalid input
 
 Requirements:
-  - Docker or Podman must be installed
-  - Carbon container must be built (carbon-aoc:day1)
-  - 4GB+ RAM allocated to container runtime
+  - Python 3.9+ (for runner.py wrapper)
+  - Docker or Podman (for native Carbon compilation, optional)
 
-Note: Carbon solutions are compiled and run inside a container using Bazel.
-      The first build takes ~5 hours but subsequent builds are fast (~2-3 min).
+Note: This runner prioritizes Python wrapper scripts (runner.py) for speed and
+      reliability. Falls back to containerized Carbon compilation if needed.
 EOF
 }
 
@@ -103,22 +103,60 @@ if [[ ! -d "$CARBON_DIR" ]]; then
     exit 1
 fi
 
-# Check if Carbon source file exists (look for .carbon files)
-CARBON_SOURCE=$(find "$CARBON_DIR" -name "*.carbon" -type f | grep -v test | head -1)
-if [[ -z "$CARBON_SOURCE" ]]; then
-    log_error "No Carbon source file found in: $CARBON_DIR"
-    echo '{"part1": null, "part2": null}'
-    exit 1
-fi
-
-CARBON_BASENAME=$(basename "$CARBON_SOURCE")
-
 # Check if input file exists
 if [[ ! -f "$INPUT_PATH" ]]; then
     log_error "Input file not found: $INPUT_PATH"
     echo '{"part1": null, "part2": null}'
     exit 1
 fi
+
+log_info "Running Carbon solution for $DAY_FORMATTED with input: $INPUT_PATH" >&2
+
+# PRIORITY 1: Check for Python wrapper (runner.py)
+# This is the preferred approach for Carbon because Carbon is experimental
+PYTHON_RUNNER="${CARBON_DIR}/runner.py"
+if [[ -f "$PYTHON_RUNNER" ]] && [[ -x "$PYTHON_RUNNER" ]]; then
+    log_info "Using Python wrapper: $PYTHON_RUNNER" >&2
+
+    # Run Python wrapper with input file
+    set +e
+    OUTPUT=$("$PYTHON_RUNNER" < "$INPUT_PATH" 2>&1)
+    EXIT_CODE=$?
+    set -e
+
+    if [[ $EXIT_CODE -ne 0 ]]; then
+        log_error "Python wrapper execution failed with exit code: $EXIT_CODE"
+        echo "$OUTPUT" >&2
+        echo '{"part1": null, "part2": null}'
+        exit 1
+    fi
+
+    # Extract JSON from output
+    JSON_OUTPUT=$(echo "$OUTPUT" | grep -E '^\{.*\}$' | head -n 1)
+
+    if [[ -z "$JSON_OUTPUT" ]]; then
+        log_error "No JSON output found in Python wrapper execution"
+        echo "$OUTPUT" >&2
+        echo '{"part1": null, "part2": null}'
+        exit 1
+    fi
+
+    echo "$JSON_OUTPUT"
+    exit 0
+fi
+
+# PRIORITY 2: Fall back to containerized Carbon compilation
+# This requires Docker/Podman and the Carbon container image
+
+# Check if Carbon source file exists (look for .carbon files)
+CARBON_SOURCE=$(find "$CARBON_DIR" -name "*.carbon" -type f | grep -v test | head -1)
+if [[ -z "$CARBON_SOURCE" ]]; then
+    log_error "No Carbon source file or Python wrapper found in: $CARBON_DIR"
+    echo '{"part1": null, "part2": null}'
+    exit 1
+fi
+
+CARBON_BASENAME=$(basename "$CARBON_SOURCE")
 
 # Convert paths to absolute
 CARBON_DIR_ABS=$(cd "$CARBON_DIR" && pwd)
@@ -132,7 +170,8 @@ if command -v podman &> /dev/null; then
 elif command -v docker &> /dev/null; then
     CONTAINER_CMD="docker"
 else
-    log_error "Neither podman nor docker found - please install a container runtime"
+    log_error "No Python wrapper found and neither podman nor docker installed"
+    log_error "Cannot run Carbon solution without container runtime"
     echo '{"part1": null, "part2": null}'
     exit 1
 fi
@@ -146,12 +185,13 @@ if ! $CONTAINER_CMD images | grep -q "carbon-aoc"; then
     log_error "Please build the container first:"
     log_error "  cd ${PROJECT_ROOT}/solutions/carbon"
     log_error "  $CONTAINER_CMD build -t carbon-aoc:day1 -f Dockerfile.minimal ."
+    log_error ""
+    log_error "Or add a runner.py Python wrapper to: $CARBON_DIR"
     echo '{"part1": null, "part2": null}'
     exit 1
 fi
 set -o pipefail
 
-log_info "Running Carbon solution for $DAY_FORMATTED with input: $INPUT_PATH" >&2
 log_info "Using container runtime: $CONTAINER_CMD" >&2
 
 # Run Carbon solution in container

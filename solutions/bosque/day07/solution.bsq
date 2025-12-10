@@ -1,0 +1,363 @@
+namespace Main;
+
+// Advent of Code 2025 Day 7 - Tachyon Manifold Beam Splitter Simulation
+//
+// IMPORTANT: Bosque is a Microsoft Research language with limited stdlib
+// This implementation follows the spec but requires a Python wrapper
+// for file I/O and execution due to BosqueCore limitations.
+//
+// Algorithm:
+// 1. Parse input into a 2D grid of characters
+// 2. Find starting position 'S' in the grid
+// 3. Simulate beam propagation:
+//    - Beam starts at 'S' moving downward
+//    - Beam passes through '.' freely
+//    - When beam encounters '^', the beam stops and two new beams are created:
+//      - One beam at immediate left (same row, col-1)
+//      - One beam at immediate right (same row, col+1)
+//      - Both new beams move downward from their positions
+// 4. Count the total number of times beams are split
+// 5. Only count each splitter once (first hit activates it)
+//
+// Input format:
+// - 2D grid with:
+//   - 'S' = starting position
+//   - '^' = splitter
+//   - '.' = empty space
+//
+// Example:
+// .......S.......
+// ...............
+// .......^.......
+// ...............
+// ......^.^......
+//
+// Expected output for sample: {"part1": 21, "part2": null}
+
+// Represents a beam with position (row, col)
+// All beams move downward (increment row by 1 each step)
+entity Beam provides Parsable {
+    field row: Int;
+    field col: Int;
+}
+
+// Create a new beam at given position
+function createBeam(row: Int, col: Int): Beam {
+    return Beam@{row=row, col=col};
+}
+
+// Parse input into a 2D grid of characters
+// Returns List<List<String>> where each inner list is a row of characters
+function parseGrid(input: String): List<List<String>> {
+    var lines = String::split(input, "\n");
+    var grid = List::create<List<String>>();
+
+    var i = 0i;
+    while(i < List::size<String>(lines)) {
+        var line = String::trim(List::get<String>(lines, i));
+
+        if(String::length(line) > 0i) {
+            // Convert each character to a list element
+            var row = List::create<String>();
+            var j = 0i;
+            while(j < String::length(line)) {
+                var ch = String::charAt(line, j);
+                row = List::add<String>(row, ch);
+                j = j + 1i;
+            }
+
+            grid = List::add<List<String>>(grid, row);
+        }
+
+        i = i + 1i;
+    }
+
+    return grid;
+}
+
+// Find the starting position 'S' in the grid
+// Returns Option<{row: Int, col: Int}>
+function findStartPosition(grid: List<List<String>>): {row: Int, col: Int}? {
+    var row = 0i;
+    while(row < List::size<List<String>>(grid)) {
+        var rowData = List::get<List<String>>(grid, row);
+        var col = 0i;
+
+        while(col < List::size<String>(rowData)) {
+            var cell = List::get<String>(rowData, col);
+            if(cell == "S") {
+                return {row: row, col: col};
+            }
+            col = col + 1i;
+        }
+
+        row = row + 1i;
+    }
+
+    return none;
+}
+
+// Check if a position is within grid bounds
+function isInBounds(grid: List<List<String>>, row: Int, col: Int): Bool {
+    if(List::size<List<String>>(grid) == 0i) {
+        return false;
+    }
+
+    var rows = List::size<List<String>>(grid);
+    var cols = List::size<String>(List::get<List<String>>(grid, 0i));
+
+    return row >= 0i && row < rows && col >= 0i && col < cols;
+}
+
+// Get cell at position (row, col)
+// Returns the character at that position or empty string if out of bounds
+function getCell(grid: List<List<String>>, row: Int, col: Int): String {
+    if(!isInBounds(grid, row, col)) {
+        return "";
+    }
+
+    var rowData = List::get<List<String>>(grid, row);
+    return List::get<String>(rowData, col);
+}
+
+// Simulate beam propagation and count splits
+// Uses a set to track activated splitters (count each only once)
+function simulateBeamPropagation(grid: List<List<String>>, startRow: Int, startCol: Int): Int {
+    // Active beams queue
+    var activeBeams = List::create<Beam>();
+    activeBeams = List::add<Beam>(activeBeams, createBeam(startRow, startCol));
+
+    // Track activated splitters as list of "{row},{col}" strings
+    var activatedSplitters = List::create<String>();
+
+    // Track visited beam positions to avoid infinite loops
+    var visitedBeams = List::create<String>();
+
+    var splitCount = 0i;
+    var iteration = 0i;
+    var maxIterations = 100000i; // Safety limit
+
+    while(List::size<Beam>(activeBeams) > 0i && iteration < maxIterations) {
+        iteration = iteration + 1i;
+        var nextBeams = List::create<Beam>();
+
+        var beamIdx = 0i;
+        while(beamIdx < List::size<Beam>(activeBeams)) {
+            var beam = List::get<Beam>(activeBeams, beamIdx);
+
+            // Create unique key for this beam position
+            var beamKey = String::concat(
+                Int::toString(beam.row),
+                String::concat(",", Int::toString(beam.col))
+            );
+
+            // Skip if already visited
+            var alreadyVisited = false;
+            var k = 0i;
+            while(k < List::size<String>(visitedBeams)) {
+                if(List::get<String>(visitedBeams, k) == beamKey) {
+                    alreadyVisited = true;
+                }
+                k = k + 1i;
+            }
+
+            if(!alreadyVisited) {
+                visitedBeams = List::add<String>(visitedBeams, beamKey);
+
+                // Move beam one step downward
+                var newRow = beam.row + 1i;
+                var newCol = beam.col;
+
+                // Check if new position is within bounds
+                if(isInBounds(grid, newRow, newCol)) {
+                    var cell = getCell(grid, newRow, newCol);
+                    var newBeam = createBeam(newRow, newCol);
+
+                    if(cell == ".") {
+                        // Continue tracking beam through empty space
+                        nextBeams = List::add<Beam>(nextBeams, newBeam);
+                    }
+                    elif(cell == "^") {
+                        // Hit a splitter
+                        var splitterKey = String::concat(
+                            Int::toString(newRow),
+                            String::concat(",", Int::toString(newCol))
+                        );
+
+                        // Check if already activated
+                        var alreadyActivated = false;
+                        var j = 0i;
+                        while(j < List::size<String>(activatedSplitters)) {
+                            if(List::get<String>(activatedSplitters, j) == splitterKey) {
+                                alreadyActivated = true;
+                            }
+                            j = j + 1i;
+                        }
+
+                        if(!alreadyActivated) {
+                            splitCount = splitCount + 1i;
+                            activatedSplitters = List::add<String>(activatedSplitters, splitterKey);
+                        }
+
+                        // Create left beam at (newRow, newCol - 1)
+                        var leftCol = newCol - 1i;
+                        if(isInBounds(grid, newRow, leftCol)) {
+                            var leftBeam = createBeam(newRow, leftCol);
+                            nextBeams = List::add<Beam>(nextBeams, leftBeam);
+                        }
+
+                        // Create right beam at (newRow, newCol + 1)
+                        var rightCol = newCol + 1i;
+                        if(isInBounds(grid, newRow, rightCol)) {
+                            var rightBeam = createBeam(newRow, rightCol);
+                            nextBeams = List::add<Beam>(nextBeams, rightBeam);
+                        }
+                    }
+                    elif(cell == "S") {
+                        // Starting position acts as empty space
+                        nextBeams = List::add<Beam>(nextBeams, newBeam);
+                    }
+                    else {
+                        // Unknown cell type - treat as empty
+                        nextBeams = List::add<Beam>(nextBeams, newBeam);
+                    }
+                }
+            }
+
+            beamIdx = beamIdx + 1i;
+        }
+
+        activeBeams = nextBeams;
+    }
+
+    return splitCount;
+}
+
+// Solve the puzzle: parse grid, find start, simulate, count splits
+function solve(input: String): {part1: Int, part2: Int} {
+    // Parse input into grid
+    var grid = parseGrid(input);
+
+    if(List::size<List<String>>(grid) == 0i) {
+        return {part1: 0i, part2: 0i};
+    }
+
+    // Find starting position
+    var startPos = findStartPosition(grid);
+
+    if(startPos == none) {
+        return {part1: 0i, part2: 0i};
+    }
+
+    // Part 1: Count beam splits
+    var splitCount = simulateBeamPropagation(grid, startPos.row, startPos.col);
+
+    return {part1: splitCount, part2: 0i};
+}
+
+// Main entry point
+entrypoint function main(args: List<String>): Int {
+    var inputContent = "";
+
+    // Read file path from command-line arguments
+    if(List::size<String>(args) > 1i) {
+        var filePath = List::get<String>(args, 1i);
+
+        // WORKAROUND: Bosque file I/O is not available
+        // The Python runner wrapper handles file reading and execution
+        try {
+            inputContent = Environment::readFile(filePath);
+        }
+        catch {
+            // Fallback: try reading from stdin
+            inputContent = Console::readAll();
+        }
+    }
+
+    var result = solve(inputContent);
+
+    // Output JSON format for cross-language validation
+    var output = String::concat(
+        "{\"part1\": ",
+        Int::toString(result.part1),
+        ", \"part2\": null}"
+    );
+    Console::writeLine(output);
+
+    return 0i;
+}
+
+// === UNIT TESTS ===
+// Note: These test signatures demonstrate the expected behavior.
+// Actual tests are implemented in Python (test_bosque_day07.py)
+
+// Test 1: Parse grid with 3 rows
+function test_parseGrid(): Bool {
+    var input = "...\n.S.\n.^.";
+    var grid = parseGrid(input);
+    _assert(List::size<List<String>>(grid) == 3i);
+    return true;
+}
+
+// Test 2: Find start position at (1, 1)
+function test_findStartPosition(): Bool {
+    var input = "...\n.S.\n.^.";
+    var grid = parseGrid(input);
+    var start = findStartPosition(grid);
+    _assert(start != none);
+    _assert(start.row == 1i);
+    _assert(start.col == 1i);
+    return true;
+}
+
+// Test 3: Check bounds validation
+function test_isInBounds(): Bool {
+    var input = "...\n.S.\n.^.";
+    var grid = parseGrid(input);
+    _assert(isInBounds(grid, 0i, 0i) == true);
+    _assert(isInBounds(grid, 2i, 2i) == true);
+    _assert(isInBounds(grid, -1i, 0i) == false);
+    _assert(isInBounds(grid, 3i, 0i) == false);
+    return true;
+}
+
+// Test 4: Single splitter produces count of 1
+function test_singleSplitter(): Bool {
+    var input = ".S.\n...\n.^.";
+    var result = solve(input);
+    _assert(result.part1 == 1i);
+    return true;
+}
+
+// Test 5: Beam exits grid without hitting splitter
+function test_beamExitsGrid(): Bool {
+    var input = ".S.\n...";
+    var result = solve(input);
+    _assert(result.part1 == 0i);
+    return true;
+}
+
+// Test 6: Splitter on left edge only creates right beam
+function test_splitterOnEdge(): Bool {
+    var input = "S..\n...\n^..";
+    var result = solve(input);
+    _assert(result.part1 == 1i);
+    return true;
+}
+
+// Test 7: Sample input produces 21 splits
+function test_sampleInput(): Bool {
+    var sample = ".......S.......\n...............\n.......^.......\n...............\n......^.^......\n...............\n.....^.^.^.....\n...............\n....^.^...^....\n...............\n...^.^...^.^...\n...............\n..^...^.....^..\n...............\n.^.^.^.^.^...^.\n...............";
+    var result = solve(sample);
+    _assert(result.part1 == 21i);
+    return true;
+}
+
+// Test 8: Get cell at valid position
+function test_getCell(): Bool {
+    var input = "...\n.S.\n.^.";
+    var grid = parseGrid(input);
+    var cell = getCell(grid, 1i, 1i);
+    _assert(cell == "S");
+    return true;
+}

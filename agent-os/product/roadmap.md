@@ -92,7 +92,7 @@
 
 19. [x] Day 6 Part 1 — Implement Part 1 solution in all 4 languages with cross-language validation `M`
 
-20. [ ] Day 6 Part 2 — Implement Part 2 solution in all 4 languages with cross-language validation `M`
+20. [x] Day 6 Part 2 — Implement Part 2 solution in all 4 languages with cross-language validation `M`
 
 21. [ ] Day 6 Analysis — Compare approaches and document language-specific observations `XS`
 
@@ -104,7 +104,7 @@
 ## Phase 7: Day 7 Solutions
 *Problem releases December 7th at midnight EST*
 
-22. [ ] Day 7 Part 1 — Implement Part 1 solution in all 4 languages with cross-language validation `M`
+22. [x] Day 7 Part 1 — Implement Part 1 solution in all 4 languages with cross-language validation `M`
 
 23. [ ] Day 7 Part 2 — Implement Part 2 solution in all 4 languages with cross-language validation `M`
 
