@@ -1,3 +1,4 @@
+import gleam/dict.{type Dict}
 import gleam/int
 import gleam/io
 import gleam/list
@@ -25,7 +26,9 @@ pub fn main() {
       io.println(
         "{\"part1\": "
         <> int.to_string(part1)
-        <> ", \"part2\": null}",
+        <> ", \"part2\": "
+        <> int.to_string(part2)
+        <> "}",
       )
     }
     Error(err) -> {
@@ -124,16 +127,8 @@ fn do_simulate(
   let max_iterations = 100_000
 
   case active_beams, iteration < max_iterations {
-    [], _ -> {
-      io.println_error(
-        "Simulation complete. Total splits: " <> int.to_string(split_count),
-      )
-      split_count
-    }
-    _, False -> {
-      io.println_error("WARNING: Reached maximum iterations limit!")
-      split_count
-    }
+    [], _ -> split_count
+    _, False -> split_count
     _, True -> {
       // Process all active beams for this iteration
       let #(next_beams, new_split_count, new_activated, new_visited) =
@@ -144,13 +139,6 @@ fn do_simulate(
           activated_splitters,
           visited_beams,
         )
-
-      io.println_error(
-        "Iteration "
-        <> int.to_string(iteration + 1)
-        <> ": Active beams: "
-        <> int.to_string(list.length(next_beams)),
-      )
 
       do_simulate(
         grid,
@@ -190,37 +178,10 @@ fn process_beams(
 
           // Check if new position is within bounds
           case is_in_bounds(grid, new_row, new_col) {
-            False -> {
-              io.println_error(
-                "Beam at ("
-                <> int.to_string(beam.row)
-                <> ", "
-                <> int.to_string(beam.col)
-                <> ") moved to ("
-                <> int.to_string(new_row)
-                <> ", "
-                <> int.to_string(new_col)
-                <> ") - OUT OF BOUNDS",
-              )
-              #(next_beams, count, activated, new_visited)
-            }
+            False -> #(next_beams, count, activated, new_visited)
             True -> {
               let cell = get_cell(grid, new_row, new_col)
               let new_beam = Beam(new_row, new_col)
-
-              io.println_error(
-                "Beam at ("
-                <> int.to_string(beam.row)
-                <> ", "
-                <> int.to_string(beam.col)
-                <> ") moved to ("
-                <> int.to_string(new_row)
-                <> ", "
-                <> int.to_string(new_col)
-                <> ") - found '"
-                <> cell
-                <> "'",
-              )
 
               case cell {
                 "." | "S" -> {
@@ -239,28 +200,8 @@ fn process_beams(
                   let #(new_count, new_activated) = case
                     set.contains(activated, splitter_pos)
                   {
-                    False -> {
-                      io.println_error(
-                        "SPLIT #"
-                        <> int.to_string(count + 1)
-                        <> " at ("
-                        <> int.to_string(new_row)
-                        <> ", "
-                        <> int.to_string(new_col)
-                        <> ") - FIRST HIT",
-                      )
-                      #(count + 1, set.insert(activated, splitter_pos))
-                    }
-                    True -> {
-                      io.println_error(
-                        "Hit splitter at ("
-                        <> int.to_string(new_row)
-                        <> ", "
-                        <> int.to_string(new_col)
-                        <> ") - ALREADY ACTIVATED",
-                      )
-                      #(count, activated)
-                    }
+                    False -> #(count + 1, set.insert(activated, splitter_pos))
+                    True -> #(count, activated)
                   }
 
                   // Create left and right beams
@@ -272,28 +213,12 @@ fn process_beams(
                   {
                     True -> {
                       let left_beam = Beam(new_row, left_col)
-                      io.println_error(
-                        "  Created left beam at ("
-                        <> int.to_string(new_row)
-                        <> ", "
-                        <> int.to_string(left_col)
-                        <> ")",
-                      )
                       case list.any(next_beams, fn(b) { b == left_beam }) {
                         True -> next_beams
                         False -> [left_beam, ..next_beams]
                       }
                     }
-                    False -> {
-                      io.println_error(
-                        "  Left beam would be out of bounds at ("
-                        <> int.to_string(new_row)
-                        <> ", "
-                        <> int.to_string(left_col)
-                        <> ")",
-                      )
-                      next_beams
-                    }
+                    False -> next_beams
                   }
 
                   let beams_with_both = case
@@ -301,28 +226,12 @@ fn process_beams(
                   {
                     True -> {
                       let right_beam = Beam(new_row, right_col)
-                      io.println_error(
-                        "  Created right beam at ("
-                        <> int.to_string(new_row)
-                        <> ", "
-                        <> int.to_string(right_col)
-                        <> ")",
-                      )
                       case list.any(beams_with_left, fn(b) { b == right_beam }) {
                         True -> beams_with_left
                         False -> [right_beam, ..beams_with_left]
                       }
                     }
-                    False -> {
-                      io.println_error(
-                        "  Right beam would be out of bounds at ("
-                        <> int.to_string(new_row)
-                        <> ", "
-                        <> int.to_string(right_col)
-                        <> ")",
-                      )
-                      beams_with_left
-                    }
+                    False -> beams_with_left
                   }
 
                   #(beams_with_both, new_count, new_activated, new_visited)
@@ -346,6 +255,65 @@ fn process_beams(
   )
 }
 
+/// Count quantum timelines using memoized recursive approach
+/// Returns number of distinct terminal timelines reaching bottom row
+pub fn count_timelines_memoized(
+  grid: List(List(String)),
+  row: Int,
+  col: Int,
+  memo: Dict(#(Int, Int), Int),
+) -> #(Int, Dict(#(Int, Int), Int)) {
+  // Check if we've already computed this position
+  case dict.get(memo, #(row, col)) {
+    Ok(cached) -> #(cached, memo)
+    Error(_) -> {
+      // Base case: reached bottom row
+      let rows = list.length(grid)
+      case row == rows - 1 {
+        True -> #(1, memo)
+        False -> {
+          let cell = get_cell(grid, row, col)
+
+          let #(result, new_memo) = case cell {
+            "." | "S" -> {
+              // Move down one row
+              count_timelines_memoized(grid, row + 1, col, memo)
+            }
+            "^" -> {
+              // Quantum split: left and right branches
+              let #(left_count, memo_after_left) = case col > 0 {
+                True -> count_timelines_memoized(grid, row, col - 1, memo)
+                False -> #(0, memo)
+              }
+
+              let cols = case list.first(grid) {
+                Ok(first_row) -> list.length(first_row)
+                Error(_) -> 0
+              }
+
+              let #(right_count, memo_after_right) = case col < cols - 1 {
+                True ->
+                  count_timelines_memoized(grid, row, col + 1, memo_after_left)
+                False -> #(0, memo_after_left)
+              }
+
+              #(left_count + right_count, memo_after_right)
+            }
+            _ -> {
+              // Unknown cell - move down
+              count_timelines_memoized(grid, row + 1, col, memo)
+            }
+          }
+
+          // Cache the result
+          let updated_memo = dict.insert(new_memo, #(row, col), result)
+          #(result, updated_memo)
+        }
+      }
+    }
+  }
+}
+
 /// Solve the puzzle
 pub fn solve(input: String) -> Result(#(Int, Int), String) {
   let grid = parse_grid(input)
@@ -356,29 +324,14 @@ pub fn solve(input: String) -> Result(#(Int, Int), String) {
       case find_start_position(grid) {
         Error(err) -> Error(err)
         Ok(#(start_row, start_col)) -> {
-          io.println_error(
-            "Found start position at ("
-            <> int.to_string(start_row)
-            <> ", "
-            <> int.to_string(start_col)
-            <> ")",
-          )
-
-          let rows = list.length(grid)
-          let cols = case list.first(grid) {
-            Ok(first_row) -> list.length(first_row)
-            Error(_) -> 0
-          }
-          io.println_error(
-            "Grid dimensions: "
-            <> int.to_string(rows)
-            <> " rows x "
-            <> int.to_string(cols)
-            <> " cols",
-          )
-
+          // Part 1: Count beam splits
           let split_count = simulate_beam_propagation(grid, start_row, start_col)
-          Ok(#(split_count, 0))
+
+          // Part 2: Count quantum timelines using memoization
+          let #(timeline_count, _memo) =
+            count_timelines_memoized(grid, start_row, start_col, dict.new())
+
+          Ok(#(split_count, timeline_count))
         }
       }
     }

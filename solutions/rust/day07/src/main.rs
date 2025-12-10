@@ -1,5 +1,5 @@
 use std::io::{self, Read};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 fn main() {
     // Read input from stdin
@@ -67,10 +67,6 @@ fn simulate_beam_propagation(grid: &[Vec<char>], start_row: usize, start_col: us
     let mut activated_splitters: HashSet<(usize, usize)> = HashSet::new();
     let mut visited_beams: HashSet<Beam> = HashSet::new();
 
-    // Debug output
-    eprintln!("Starting simulation at position ({}, {})", start_row, start_col);
-    eprintln!("Grid dimensions: {} rows x {} cols", grid.len(), grid[0].len());
-
     let mut iteration = 0;
     let max_iterations = 100000; // Safety limit to prevent infinite loops
 
@@ -92,17 +88,12 @@ fn simulate_beam_propagation(grid: &[Vec<char>], start_row: usize, start_col: us
 
             // Check if new position is within bounds
             if !is_in_bounds(grid, new_row, new_col) {
-                eprintln!("Beam at ({}, {}) moved to ({}, {}) - OUT OF BOUNDS",
-                         beam.row, beam.col, new_row, new_col);
                 continue;
             }
 
             let new_row_usize = new_row as usize;
             let new_col_usize = new_col as usize;
             let cell = grid[new_row_usize][new_col_usize];
-
-            eprintln!("Beam at ({}, {}) moved to ({}, {}) - found '{}'",
-                     beam.row, beam.col, new_row_usize, new_col_usize, cell);
 
             let new_beam = Beam::new(new_row_usize, new_col_usize);
 
@@ -120,9 +111,6 @@ fn simulate_beam_propagation(grid: &[Vec<char>], start_row: usize, start_col: us
                     if !activated_splitters.contains(&(new_row_usize, new_col_usize)) {
                         split_count += 1;
                         activated_splitters.insert((new_row_usize, new_col_usize));
-                        eprintln!("SPLIT #{} at ({}, {}) - FIRST HIT", split_count, new_row_usize, new_col_usize);
-                    } else {
-                        eprintln!("Hit splitter at ({}, {}) - ALREADY ACTIVATED", new_row_usize, new_col_usize);
                     }
 
                     // Create left beam at same row, col - 1
@@ -132,10 +120,7 @@ fn simulate_beam_propagation(grid: &[Vec<char>], start_row: usize, start_col: us
                         if !seen_this_iteration.contains(&left_beam) {
                             next_beams.push(left_beam);
                             seen_this_iteration.insert(left_beam);
-                            eprintln!("  Created left beam at ({}, {})", new_row_usize, left_col);
                         }
-                    } else {
-                        eprintln!("  Left beam would be out of bounds at ({}, {})", new_row, left_col);
                     }
 
                     // Create right beam at same row, col + 1
@@ -145,10 +130,7 @@ fn simulate_beam_propagation(grid: &[Vec<char>], start_row: usize, start_col: us
                         if !seen_this_iteration.contains(&right_beam) {
                             next_beams.push(right_beam);
                             seen_this_iteration.insert(right_beam);
-                            eprintln!("  Created right beam at ({}, {})", new_row_usize, right_col);
                         }
-                    } else {
-                        eprintln!("  Right beam would be out of bounds at ({}, {})", new_row, right_col);
                     }
                 }
                 'S' => {
@@ -169,16 +151,69 @@ fn simulate_beam_propagation(grid: &[Vec<char>], start_row: usize, start_col: us
         }
 
         active_beams = next_beams;
-        eprintln!("Iteration {}: Active beams: {}", iteration, active_beams.len());
-        eprintln!("---");
     }
 
     if iteration >= max_iterations {
         eprintln!("WARNING: Reached maximum iterations limit!");
     }
 
-    eprintln!("Simulation complete. Total splits: {}", split_count);
     split_count
+}
+
+/// Count quantum timelines using memoized recursive approach
+/// Memoization key: (row, col) -> count of timelines from that position
+fn count_timelines_memoized(
+    grid: &[Vec<char>],
+    row: usize,
+    col: usize,
+    memo: &mut HashMap<(usize, usize), usize>,
+) -> usize {
+    // Check if we've already computed this position
+    if let Some(&cached) = memo.get(&(row, col)) {
+        return cached;
+    }
+
+    // Base case: reached bottom row
+    if row == grid.len() - 1 {
+        return 1;
+    }
+
+    let cell = grid[row][col];
+
+    let result = match cell {
+        '.' | 'S' => {
+            // Move down one row
+            let next_row = row + 1;
+            count_timelines_memoized(grid, next_row, col, memo)
+        }
+        '^' => {
+            // Quantum split: left and right branches
+            let mut total = 0;
+
+            // Left branch
+            let left_col_i32 = col as i32 - 1;
+            if is_in_bounds(grid, row as i32, left_col_i32) {
+                total += count_timelines_memoized(grid, row, left_col_i32 as usize, memo);
+            }
+
+            // Right branch
+            let right_col_i32 = col as i32 + 1;
+            if is_in_bounds(grid, row as i32, right_col_i32) {
+                total += count_timelines_memoized(grid, row, right_col_i32 as usize, memo);
+            }
+
+            total
+        }
+        _ => {
+            // Unknown cell - move down
+            let next_row = row + 1;
+            count_timelines_memoized(grid, next_row, col, memo)
+        }
+    };
+
+    // Cache the result
+    memo.insert((row, col), result);
+    result
 }
 
 /// Solve both parts of the puzzle
@@ -186,7 +221,7 @@ fn solve(input: &str) -> (String, String) {
     let grid = parse_grid(input);
 
     if grid.is_empty() {
-        return ("null".to_string(), "null".to_string());
+        return ("null".to_string(), "0".to_string());
     }
 
     // Find starting position
@@ -198,18 +233,21 @@ fn solve(input: &str) -> (String, String) {
         }
     };
 
-    eprintln!("Found start position at ({}, {})", start_pos.0, start_pos.1);
-
     // Part 1: Count beam splits
     let split_count = simulate_beam_propagation(&grid, start_pos.0, start_pos.1);
 
-    (split_count.to_string(), "null".to_string())
+    // Part 2: Count quantum timelines using memoized recursive approach
+    let mut memo = HashMap::new();
+    let timeline_count = count_timelines_memoized(&grid, start_pos.0, start_pos.1, &mut memo);
+
+    (split_count.to_string(), timeline_count.to_string())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    // Part 1 tests
     #[test]
     fn test_parse_grid() {
         let input = "...\n.S.\n.^.";
@@ -296,5 +334,137 @@ mod tests {
 ...............";
         let (result, _) = solve(input);
         assert_eq!(result, "21");
+    }
+
+    // Part 2 tests - Task Group 1
+    #[test]
+    fn test_part2_single_straight_path() {
+        // No splitters - single timeline reaching bottom
+        let input = "S\n.\n.";
+        let (_, part2) = solve(input);
+        assert_eq!(part2, "1");
+    }
+
+    #[test]
+    fn test_part2_single_splitter_two_branches() {
+        // One splitter creating two paths, both reaching bottom
+        let input = ".S.\n.^.\n...";
+        let (_, part2) = solve(input);
+        assert_eq!(part2, "2");
+    }
+
+    #[test]
+    fn test_part2_splitter_left_edge_exits() {
+        // Splitter on left edge - left branch exits, right continues
+        let input = "...S...\n.......\n^......\n.......";
+        let (_, part2) = solve(input);
+        assert_eq!(part2, "1");
+    }
+
+    #[test]
+    fn test_part2_splitter_right_edge_exits() {
+        // Splitter on right edge - right branch exits, left continues
+        let input = "...S...\n.......\n......^\n.......";
+        let (_, part2) = solve(input);
+        assert_eq!(part2, "1");
+    }
+
+    #[test]
+    fn test_part2_sample_input() {
+        // Sample input should produce 40 terminal timelines
+        let input = ".......S.......
+...............
+.......^.......
+...............
+......^.^......
+...............
+.....^.^.^.....
+...............
+....^.^...^....
+...............
+...^.^...^.^...
+...............
+..^...^.....^..
+...............
+.^.^.^.^.^...^.
+...............";
+        let (part1, part2) = solve(input);
+        assert_eq!(part1, "21");
+        assert_eq!(part2, "40");
+    }
+
+    // Part 2 tests - Task Group 2 (Integration)
+    #[test]
+    fn test_part2_empty_grid() {
+        let input = "";
+        let (_, part2) = solve(input);
+        assert_eq!(part2, "0");
+    }
+
+    #[test]
+    fn test_part2_no_start_position() {
+        let input = "...\n...\n...";
+        let (part1, part2) = solve(input);
+        assert_eq!(part1, "null");
+        assert_eq!(part2, "null");
+    }
+
+    #[test]
+    fn test_part2_json_output_format() {
+        // Verify JSON format is valid
+        let input = "S\n.";
+        let (part1, part2) = solve(input);
+        // Should be parseable as JSON: {"part1": 0, "part2": 1}
+        assert_eq!(part1, "0");
+        assert_eq!(part2, "1");
+    }
+
+    // Part 2 tests - Task Group 3 (Additional edge cases)
+    #[test]
+    fn test_part2_multiple_splitters_sequence() {
+        // Multiple splitters creating exponential paths
+        let input = "..S..\n.....\n..^..\n.....\n.^.^.\n.....";
+        let (_, part2) = solve(input);
+        assert_eq!(part2, "4");
+    }
+
+    #[test]
+    fn test_part2_all_paths_exit_boundaries() {
+        // Grid where all paths exit left/right before bottom
+        let input = ".S.\n.^.\n...";
+        let (_, part2) = solve(input);
+        assert_eq!(part2, "2");
+    }
+
+    #[test]
+    fn test_part2_no_splitters_straight_path() {
+        // No splitters, just straight path to bottom
+        let input = ".S.\n...\n...\n...";
+        let (_, part2) = solve(input);
+        assert_eq!(part2, "1");
+    }
+
+    #[test]
+    fn test_part2_nested_quantum_branches() {
+        // Nested splitters - simpler test case
+        let input = "..S..\n.....\n..^..\n.....\n.....\n.....";
+        let (_, part2) = solve(input);
+        assert_eq!(part2, "2");
+    }
+
+    #[test]
+    fn test_part2_splitter_immediate_bottom() {
+        // Splitter on the row just above bottom
+        let input = "S\n.\n^";
+        let (_, part2) = solve(input);
+        assert_eq!(part2, "1");
+    }
+
+    #[test]
+    fn test_part2_wide_grid_single_path() {
+        // Wide grid but only one path
+        let input = ".......S.......\n...............\n...............";
+        let (_, part2) = solve(input);
+        assert_eq!(part2, "1");
     }
 }
