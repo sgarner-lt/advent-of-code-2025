@@ -54,3 +54,7 @@
 - Time your solution (should typically run in < 15 seconds)
 - Profile if optimization needed
 - Test with edge cases that might cause timeouts
+- **Carbon solutions require 300-second timeout** for integration tests due to Bazel compilation in container:
+  ```bash
+  ./scripts/test_integration.sh 6 --timeout 300
+  ```

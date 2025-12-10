@@ -315,6 +315,9 @@ vim solutions/rust/day03/src/lib.rs
 **Example 4: Test slow solution with custom timeout**
 ```bash
 ./scripts/test_integration.sh 10 --timeout 120
+
+# Carbon solutions require 300 seconds due to Bazel compilation in container
+./scripts/test_integration.sh 6 --timeout 300
 ```
 
 **Example 5: Combine multiple options**
@@ -405,6 +408,7 @@ Language server support varies:
 - Built from source using Bazel
 - Requires significant build time (15-30 minutes)
 - No language server or IDE support yet
+- **Integration tests require 300-second timeout** due to containerized Bazel compilation
 
 ### Bosque
 - Microsoft Research language

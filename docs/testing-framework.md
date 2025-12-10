@@ -261,7 +261,7 @@ fn Run() {
 
 **Note:** Carbon has no string type or format functions. All output must be character-by-character using hex codes (e.g., `0x30` for '0', `0x7B` for '{'}). The `Run()` function is the entry point. For null values, you would print the literal text "null" character-by-character instead of calling `PrintIntNoNewline`.
 
-**Container Execution:** Carbon solutions are compiled with Bazel inside a container and executed automatically by the `run_carbon.sh` script. See [docs/languages/carbon.md](languages/carbon.md) for details on the containerized build process.
+**Container Execution:** Carbon solutions are compiled with Bazel inside a container and executed automatically by the `run_carbon.sh` script. **Carbon requires a 300-second timeout** because Bazel compilation in the container takes longer than other languages. See [docs/languages/carbon.md](languages/carbon.md) for details on the containerized build process.
 
 ### Bosque
 
@@ -421,6 +421,7 @@ Default timeout is 60 seconds. Use custom timeouts for:
 - Complex algorithms that take longer to run
 - Large input files
 - Debug builds (without optimizations)
+- **Carbon solutions: Always use 300 seconds** due to Bazel compilation in container
 
 ### Example 5: Verbose Testing with Sample Input
 
