@@ -51,6 +51,22 @@ impl Circuit {
     }
 }
 
+fn find_min_pair(
+    mut distances: HashMap<(Coordinate, Coordinate), f64>,
+) -> Option<(Coordinate, Coordinate)> {
+    let min_pair = distances
+        .iter()
+        .min_by(|a, b| {
+            // Compare the f64 values (b.1 and a.1).
+            // f64 doesn't implement the Ord trait required by cmp(), so we use partial_cmp().
+            // We must handle the Option returned by partial_cmp(), using unwrap() if we're sure
+            // the values are not NaN, or by providing a default Ordering.
+            a.1.total_cmp(b.1)
+        })
+        .map(|(k, _v)| *k);
+    min_pair
+}
+
 fn process_circuits(
     mut circuits: HashMap<Coordinate, Circuit>,
     mut distances: HashMap<(Coordinate, Coordinate), f64>,
@@ -59,16 +75,7 @@ fn process_circuits(
     while connections_made < 11 {
         println!("--- Connections Made: {} ---", connections_made);
         // 1. Find the min pair (this part was fine)
-        let min_pair = distances
-            .iter()
-            .min_by(|a, b| {
-                // Compare the f64 values (b.1 and a.1).
-                // f64 doesn't implement the Ord trait required by cmp(), so we use partial_cmp().
-                // We must handle the Option returned by partial_cmp(), using unwrap() if we're sure
-                // the values are not NaN, or by providing a default Ordering.
-                a.1.total_cmp(b.1)
-            })
-            .map(|(k, _v)| *k);
+        let min_pair = find_min_pair(distances.clone());
 
         // Use 'if let' for cleaner handling of the Option returned by map
         if let Some((c1, c2)) = min_pair {
@@ -176,48 +183,6 @@ fn solve(input: &str) -> (String, String) {
     (mult_top_three.to_string(), "null".to_string())
 }
 
-/*
-
-Final Grouped Map:
-{
-52762f71-605e-4dfb-999d-7b1016554431: {
-    Coordinate { x: 819, y: 987, z: 18 },
-    Coordinate { x: 941, y: 993, z: 340 },
-    Coordinate { x: 970, y: 615, z: 88 }},
-
-e78d2783-399f-4f74-9126-c759cf1598a8: {
-Coordinate { x: 862, y: 61, z: 35 },
-Coordinate { x: 984, y: 92, z: 344 }},
-
-875072b8-a164-4241-a2de-70c000c1d75c: {
-Coordinate { x: 57, y: 618, z: 57 },
-Coordinate { x: 466, y: 668, z: 158 },
-Coordinate { x: 352, y: 342, z: 300 },
-Coordinate { x: 542, y: 29, z: 236 }},
-
-1e82bdf7-ad2d-4d37-aee0-7d8729a0301b: {
-Coordinate { x: 52, y: 470, z: 668 },
-Coordinate { x: 117, y: 168, z: 530 },
-Coordinate { x: 216, y: 146, z: 977 }},
-
-1a85bc24-13cc-4f1d-b7cc-90793ddeed6e: {
-Coordinate { x: 346, y: 949, z: 466 },
-Coordinate { x: 431, y: 825, z: 988 },
-Coordinate { x: 425, y: 690, z: 689 },
-Coordinate { x: 592, y: 479, z: 940 },
-Coordinate { x: 162, y: 817, z: 812 }},
-
- f38380e3-192f-4a8b-a8ff-f70901b81013: {
- Coordinate { x: 906, y: 360, z: 560 },
- Coordinate { x: 739, y: 650, z: 466 },
- Coordinate { x: 805, y: 96, z: 715 }}}
-
-
-
-
-
-*/
-
 /// Parse input into a 2D grid of characters
 fn parse_grid(input: &str) -> Vec<Coordinate> {
     input
@@ -233,16 +198,6 @@ fn parse_grid(input: &str) -> Vec<Coordinate> {
         })
         .collect()
 }
-
-// fn part1(input: &str) -> i32 {
-//     // TODO: Implement Part 1 solution
-//     0
-// }
-
-// fn part2(input: &str) -> i32 {
-//     // TODO: Implement Part 2 solution
-//     0
-// }
 
 #[cfg(test)]
 mod tests {
@@ -275,29 +230,109 @@ mod tests {
         let grid = parse_grid(input);
         assert_eq!(grid.len(), 20);
 
-        let expected =vec![
-            Coordinate { x: 162, y: 817, z: 812 },
-            Coordinate { x: 57, y: 618, z: 57 },
-            Coordinate { x: 906, y: 360, z: 560 },
-            Coordinate { x: 592, y: 479, z: 940 },
-            Coordinate { x: 352, y: 342, z: 300 },
-            Coordinate { x: 466, y: 668, z: 158 },
-            Coordinate { x: 542, y: 29, z: 236 },
-            Coordinate { x: 431, y: 825, z: 988 },
-            Coordinate { x: 739, y: 650, z: 466 },
-            Coordinate { x: 52, y: 470, z: 668 },
-            Coordinate { x: 216, y: 146, z: 977 },
-            Coordinate { x: 819, y: 987, z: 18 },
-            Coordinate { x: 117, y: 168, z: 530 },
-            Coordinate { x: 805, y: 96, z: 715 },
-            Coordinate { x: 346, y: 949, z: 466 },
-            Coordinate { x: 970, y: 615, z: 88 },
-            Coordinate { x: 941, y: 993, z: 340 },
-            Coordinate { x: 862, y: 61, z: 35 },
-            Coordinate { x: 984, y: 92, z: 344 },
-            Coordinate { x: 425, y: 690, z: 689 },
+        let expected = vec![
+            Coordinate {
+                x: 162,
+                y: 817,
+                z: 812,
+            },
+            Coordinate {
+                x: 57,
+                y: 618,
+                z: 57,
+            },
+            Coordinate {
+                x: 906,
+                y: 360,
+                z: 560,
+            },
+            Coordinate {
+                x: 592,
+                y: 479,
+                z: 940,
+            },
+            Coordinate {
+                x: 352,
+                y: 342,
+                z: 300,
+            },
+            Coordinate {
+                x: 466,
+                y: 668,
+                z: 158,
+            },
+            Coordinate {
+                x: 542,
+                y: 29,
+                z: 236,
+            },
+            Coordinate {
+                x: 431,
+                y: 825,
+                z: 988,
+            },
+            Coordinate {
+                x: 739,
+                y: 650,
+                z: 466,
+            },
+            Coordinate {
+                x: 52,
+                y: 470,
+                z: 668,
+            },
+            Coordinate {
+                x: 216,
+                y: 146,
+                z: 977,
+            },
+            Coordinate {
+                x: 819,
+                y: 987,
+                z: 18,
+            },
+            Coordinate {
+                x: 117,
+                y: 168,
+                z: 530,
+            },
+            Coordinate {
+                x: 805,
+                y: 96,
+                z: 715,
+            },
+            Coordinate {
+                x: 346,
+                y: 949,
+                z: 466,
+            },
+            Coordinate {
+                x: 970,
+                y: 615,
+                z: 88,
+            },
+            Coordinate {
+                x: 941,
+                y: 993,
+                z: 340,
+            },
+            Coordinate {
+                x: 862,
+                y: 61,
+                z: 35,
+            },
+            Coordinate {
+                x: 984,
+                y: 92,
+                z: 344,
+            },
+            Coordinate {
+                x: 425,
+                y: 690,
+                z: 689,
+            },
         ];
 
-        assert_eq!( grid, expected );
+        assert_eq!(grid, expected);
     }
 }
