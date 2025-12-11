@@ -1,5 +1,0 @@
-=== SAMPLE INPUT TEST ===
-{"part1": 1227775554, "part2": null}
-
-=== FULL INPUT TEST ===
-{"part1": <REDACTED>, "part2": null}

@@ -1,8 +1,0 @@
-rust:input-sample.txt:1227775554:0:PASS
-rust:input.txt:<REDACTED>:1:PASS
-gleam:input-sample.txt:1227775554:0:PASS
-gleam:input.txt:<REDACTED>:3:PASS
-carbon:input-sample.txt:1227775554:0:PASS
-carbon:input.txt:<REDACTED>:1:PASS
-bosque:input-sample.txt:1227775554:0:PASS
-bosque:input.txt:<REDACTED>:1:PASS
