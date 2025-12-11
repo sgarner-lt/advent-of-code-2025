@@ -52,7 +52,7 @@ impl Circuit {
 }
 
 fn find_min_pair(
-    mut distances: HashMap<(Coordinate, Coordinate), f64>,
+    distances: &mut HashMap<(Coordinate, Coordinate), f64>,
 ) -> Option<(Coordinate, Coordinate)> {
     let min_pair = distances
         .iter()
@@ -68,14 +68,14 @@ fn find_min_pair(
 }
 
 fn process_circuits(
-    mut circuits: HashMap<Coordinate, Circuit>,
-    mut distances: HashMap<(Coordinate, Coordinate), f64>,
-) -> HashMap<Coordinate, Circuit> {
+    circuits: &mut HashMap<Coordinate, Circuit>,
+    distances: &mut HashMap<(Coordinate, Coordinate), f64>,
+) {
     let mut connections_made = 0;
-    while connections_made < 11 {
+    while connections_made < 10 {
         println!("--- Connections Made: {} ---", connections_made);
         // 1. Find the min pair (this part was fine)
-        let min_pair = find_min_pair(distances.clone());
+        let min_pair = find_min_pair(distances);
 
         // Use 'if let' for cleaner handling of the Option returned by map
         if let Some((c1, c2)) = min_pair {
@@ -129,9 +129,6 @@ fn process_circuits(
             break;
         }
     }
-
-    // Return the updated map
-    circuits
 }
 
 fn solve(input: &str) -> (String, String) {
@@ -153,11 +150,11 @@ fn solve(input: &str) -> (String, String) {
             }
         }
     }
-    let mut circuits: HashMap<Coordinate, Circuit> = HashMap::new();
-    let result: HashMap<Coordinate, Circuit> = process_circuits(circuits, distances);
+    let mut circuits = HashMap::new();
+    process_circuits(&mut circuits, &mut distances);
     let mut grouped_map: HashMap<Uuid, HashSet<Coordinate>> = HashMap::new();
 
-    for (_key, item) in result {
+    for (_key, item) in circuits {
         // Use entry() to check if the ID already exists in the grouped_map.
         // If it does, get the mutable reference to the Vec.
         // If it doesn't, insert a new empty Vec.
@@ -204,6 +201,27 @@ mod tests {
     use super::*;
 
     // Part 1 tests
+
+    #[test]
+    fn test_min_distance() {
+        let mut distances: HashMap<(Coordinate, Coordinate), f64> = HashMap::new();
+
+        let c1 = Coordinate::new(0, 0, 0);
+        let c2 = Coordinate::new(1, 1, 1);
+        let c3 = Coordinate::new(2, 2, 2);
+
+        distances.insert((c1, c2), 1.732);
+        distances.insert((c1, c3), 3.464);
+        distances.insert((c2, c3), 2.732);
+
+        let min_pair = find_min_pair(&mut distances).unwrap();
+        assert_eq!(min_pair, (c1, c2));
+
+        distances.remove(&(c1, c2));
+        let min_pair = find_min_pair(&mut distances).unwrap();
+        assert_eq!(min_pair, (c2, c3));
+    }
+
     #[test]
     fn test_parse_grid() {
         let input = "162,817,812
