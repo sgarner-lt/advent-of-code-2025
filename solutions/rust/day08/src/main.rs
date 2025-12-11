@@ -2,6 +2,7 @@
 // use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::fmt;
 use std::hash::Hash;
 use std::io::{self, Read};
 use uuid::Uuid;
@@ -34,6 +35,14 @@ impl Coordinate {
         Coordinate { x, y, z }
     }
 }
+impl fmt::Display for Coordinate {
+    // This trait requires the `fmt` method with this exact signature
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Use the write! macro to write the formatted output into the Formatter
+        write!(f, "{},{},{}", self.x, self.y, self.z)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Circuit {
     id: Uuid,
@@ -144,8 +153,9 @@ fn compute_distances(grid: &Vec<Coordinate>) -> HashMap<(Coordinate, Coordinate)
                 let z_squared = (coord.z - coord2.z).pow(2) as f64;
 
                 let dist = (x_squared + y_squared + z_squared).sqrt();
-
-                distances.insert((coord.clone(), coord2.clone()), dist);
+                if !distances.contains_key(&(coord2.clone(), coord.clone())) {
+                    distances.insert((coord.clone(), coord2.clone()), dist);
+                }
             }
         }
     }
@@ -232,7 +242,43 @@ fn parse_grid(input: &str) -> Vec<Coordinate> {
 mod tests {
     use super::*;
 
+    static SAMPLE_INPUT: &str = "162,817,812
+57,618,57
+906,360,560
+592,479,940
+352,342,300
+466,668,158
+542,29,236
+431,825,988
+739,650,466
+52,470,668
+216,146,977
+819,987,18
+117,168,530
+805,96,715
+346,949,466
+970,615,88
+941,993,340
+862,61,35
+984,92,344
+425,690,689";
+
     // Part 1 tests
+
+    #[test]
+    fn test_compute_distances() {
+        let grid = parse_grid(SAMPLE_INPUT);
+        let distances = compute_distances(&grid);
+        for ((cord1, cord2), dist) in &distances {
+            println!("Distance between {} and {} is {:.0}", cord1, cord2, dist);
+        }
+        assert_eq!(distances.len(), 190);
+        let ((first, second), _) = distances.iter().take(1).next().unwrap();
+        let opposite = distances.get(&(*second, *first));
+        assert_eq!(distances.get(&(*second, *first)).is_none(), true);
+        let self_coord = distances.get(&(*first, *first));
+        assert_eq!(self_coord.is_none(), true);
+    }
 
     #[test]
     fn test_min_distance() {
@@ -256,28 +302,7 @@ mod tests {
 
     #[test]
     fn test_parse_grid() {
-        let input = "162,817,812
-57,618,57
-906,360,560
-592,479,940
-352,342,300
-466,668,158
-542,29,236
-431,825,988
-739,650,466
-52,470,668
-216,146,977
-819,987,18
-117,168,530
-805,96,715
-346,949,466
-970,615,88
-941,993,340
-862,61,35
-984,92,344
-425,690,689";
-
-        let grid = parse_grid(input);
+        let grid = parse_grid(SAMPLE_INPUT);
         assert_eq!(grid.len(), 20);
 
         let expected = vec![
