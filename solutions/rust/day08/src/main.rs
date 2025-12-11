@@ -2,6 +2,7 @@
 // use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::hash::Hash;
 use std::io::{self, Read};
 use uuid::Uuid;
 // use std::collections::{HashMap, HashSet};
@@ -68,9 +69,10 @@ fn find_min_pair(
 }
 
 fn process_circuits(
-    circuits: &mut HashMap<Coordinate, Circuit>,
     distances: &mut HashMap<(Coordinate, Coordinate), f64>,
-) {
+) -> HashMap<Coordinate, Circuit> {
+    let mut circuits: HashMap<Coordinate, Circuit> = HashMap::new();
+
     let mut connections_made = 0;
     while connections_made < 10 {
         println!("--- Connections Made: {} ---", connections_made);
@@ -129,16 +131,13 @@ fn process_circuits(
             break;
         }
     }
+    circuits
 }
 
-fn solve(input: &str) -> (String, String) {
-    let grid = parse_grid(input);
-
-    println!("Parsed grid successfully. {:?}", grid);
-
+fn compute_distances(grid: &Vec<Coordinate>) -> HashMap<(Coordinate, Coordinate), f64> {
     let mut distances: HashMap<(Coordinate, Coordinate), f64> = HashMap::new();
-    for coord in &grid {
-        for coord2 in &grid {
+    for coord in grid {
+        for coord2 in grid {
             if coord != coord2 {
                 let x_squared = (coord.x - coord2.x).pow(2) as f64;
                 let y_squared = (coord.y - coord2.y).pow(2) as f64;
@@ -150,8 +149,12 @@ fn solve(input: &str) -> (String, String) {
             }
         }
     }
-    let mut circuits = HashMap::new();
-    process_circuits(&mut circuits, &mut distances);
+    distances
+}
+
+fn group_coordinates_by_circuit(
+    circuits: &HashMap<Coordinate, Circuit>,
+) -> HashMap<Uuid, HashSet<Coordinate>> {
     let mut grouped_map: HashMap<Uuid, HashSet<Coordinate>> = HashMap::new();
 
     for (_key, item) in circuits {
@@ -161,21 +164,50 @@ fn solve(input: &str) -> (String, String) {
         grouped_map
             .entry(item.id)
             .or_insert_with(HashSet::new)
-            .extend(item.components);
+            .extend(item.components.iter().cloned());
     }
+
     println!("Final Grouped Map: {:?}", grouped_map);
 
+    grouped_map
+}
+
+fn circuits_decending(grouped_map: &HashMap<Uuid, HashSet<Coordinate>>) -> Vec<usize> {
     let mut circuit_vec: Vec<usize> = grouped_map.iter().map(|(_, v)| v.len()).collect();
 
     circuit_vec.sort();
     circuit_vec.reverse();
 
     println!("Final Circuits: {:?}", circuit_vec);
+    circuit_vec
+}
 
-    let top_3 = circuit_vec.drain(0..3);
-
+fn pick_top_3_circuits(circuit_vec: &Vec<usize>) -> Vec<usize> {
+    let top_3 = circuit_vec.iter().take(3).cloned().collect();
     println!("Top 3 Circuits: {:?}", top_3);
-    let mult_top_three = top_3.fold(1, |acc, x| acc * x);
+    top_3
+}
+
+fn calc_top_3_product(top_3: &Vec<usize>) -> usize {
+    top_3.iter().fold(1, |acc, x| acc * x)
+}
+
+fn solve(input: &str) -> (String, String) {
+    let grid = parse_grid(input);
+
+    println!("Parsed grid successfully. {:?}", grid);
+
+    let mut distances = compute_distances(&grid);
+
+    let circuits = process_circuits(&mut distances);
+
+    let grouped_map = group_coordinates_by_circuit(&circuits);
+
+    let circuit_vec = circuits_decending(&grouped_map);
+
+    let top_3 = pick_top_3_circuits(&circuit_vec);
+
+    let mult_top_three = calc_top_3_product(&top_3);
 
     (mult_top_three.to_string(), "null".to_string())
 }
