@@ -1,7 +1,9 @@
 use std::cmp::Ordering;
 // use std::cmp::Reverse;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::io::{self, Read};
+use uuid::Uuid;
 // use std::collections::{HashMap, HashSet};
 
 fn main() {
@@ -33,11 +35,15 @@ impl Coordinate {
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Circuit {
+    id: Uuid,
     components: Vec<Coordinate>,
 }
 impl Circuit {
     fn new(components: Vec<Coordinate>) -> Self {
-        Circuit { components }
+        Circuit {
+            id: Uuid::new_v4(),
+            components,
+        }
     }
 
     fn add_coordinate(&mut self, item: Coordinate) {
@@ -132,27 +138,77 @@ fn solve(input: &str) -> (String, String) {
         }
     }
     let mut circuits: HashMap<Coordinate, Circuit> = HashMap::new();
-    let result = process_circuits(circuits, distances);
-    let mut circuit_vec: Vec<(&Coordinate, &Circuit)> = result.iter().collect();
+    let result: HashMap<Coordinate, Circuit> = process_circuits(circuits, distances);
+    let mut grouped_map: HashMap<Uuid, HashSet<Coordinate>> = HashMap::new();
 
-    circuit_vec.sort_by(|(_, a), (_, b)| {
-        // Compare b's length to a's length to reverse the order (descending)
-        b.components.len().cmp(&a.components.len())
-    });
+    for (_key, item) in result {
+        // Use entry() to check if the ID already exists in the grouped_map.
+        // If it does, get the mutable reference to the Vec.
+        // If it doesn't, insert a new empty Vec.
+        grouped_map
+            .entry(item.id)
+            .or_insert_with(HashSet::new)
+            .extend(item.components);
+    }
+     println!("Final Grouped Map: {:?}", grouped_map);
 
-    println!(
-        "Final Circuits: {:?}",
-        circuit_vec
-            .iter()
-            .map(|(_, circ)| circ.components.len())
-            .collect::<Vec<usize>>()
-    );
+    let mut circuit_vec: Vec<usize> = grouped_map.iter().map(|(_, v)| v.len()).collect();
 
-    let top_3 = circuit_vec.drain(0..2);
-    let mult_top_three = top_3.fold(1, |acc, (_, circuit)| acc * circuit.components.len() as u32);
+    circuit_vec.sort();
+    circuit_vec.reverse();
+
+    println!("Final Circuits: {:?}", circuit_vec);
+
+    let top_3 = circuit_vec.drain(0..3);
+
+    println!("Top 3 Circuits: {:?}", top_3);
+    let mult_top_three = top_3.fold(1, |acc, x| acc * x);
 
     (mult_top_three.to_string(), "null".to_string())
 }
+
+/*
+
+Final Grouped Map: 
+{
+52762f71-605e-4dfb-999d-7b1016554431: {
+    Coordinate { x: 819, y: 987, z: 18 }, 
+    Coordinate { x: 941, y: 993, z: 340 }, 
+    Coordinate { x: 970, y: 615, z: 88 }}, 
+
+e78d2783-399f-4f74-9126-c759cf1598a8: {
+Coordinate { x: 862, y: 61, z: 35 }, 
+Coordinate { x: 984, y: 92, z: 344 }}, 
+
+875072b8-a164-4241-a2de-70c000c1d75c: {
+Coordinate { x: 57, y: 618, z: 57 }, 
+Coordinate { x: 466, y: 668, z: 158 }, 
+Coordinate { x: 352, y: 342, z: 300 }, 
+Coordinate { x: 542, y: 29, z: 236 }}, 
+
+1e82bdf7-ad2d-4d37-aee0-7d8729a0301b: {
+Coordinate { x: 52, y: 470, z: 668 }, 
+Coordinate { x: 117, y: 168, z: 530 }, 
+Coordinate { x: 216, y: 146, z: 977 }}, 
+
+1a85bc24-13cc-4f1d-b7cc-90793ddeed6e: {
+Coordinate { x: 346, y: 949, z: 466 }, 
+Coordinate { x: 431, y: 825, z: 988 }, 
+Coordinate { x: 425, y: 690, z: 689 }, 
+Coordinate { x: 592, y: 479, z: 940 }, 
+Coordinate { x: 162, y: 817, z: 812 }},
+
+ f38380e3-192f-4a8b-a8ff-f70901b81013: {
+ Coordinate { x: 906, y: 360, z: 560 }, 
+ Coordinate { x: 739, y: 650, z: 466 }, 
+ Coordinate { x: 805, y: 96, z: 715 }}}
+
+
+
+
+
+*/
+
 
 /// Parse input into a 2D grid of characters
 fn parse_grid(input: &str) -> Vec<Coordinate> {
