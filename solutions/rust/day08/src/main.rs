@@ -1,5 +1,9 @@
 // use std::cmp::Ordering;
 // use std::cmp::Reverse;
+use ordered_float::NotNan;
+use std::cmp::Ordering;
+use std::cmp::Reverse;
+use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt;
@@ -24,7 +28,7 @@ fn main() {
 }
 
 /// Represents a 3d coordinate
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 struct Coordinate {
     x: i32,
     y: i32,
@@ -42,119 +46,148 @@ impl fmt::Display for Coordinate {
         write!(f, "{},{},{}", self.x, self.y, self.z)
     }
 }
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct Circuit {
-    id: Uuid,
-    components: Vec<Coordinate>,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CoordinatDistance {
+    distance: NotNan<f64>,
+    coord_a: Coordinate,
+    coord_b: Coordinate,
 }
-impl Circuit {
-    fn new(components: Vec<Coordinate>) -> Self {
-        Circuit {
-            id: Uuid::new_v4(),
-            components,
-        }
+impl fmt::Display for CoordinatDistance {
+    // This trait requires the `fmt` method with this exact signature
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Use the write! macro to write the formatted output into the Formatter
+        write!(
+            f,
+            "({},{}:{:.0})",
+            self.coord_a.x, self.coord_b, self.distance
+        )
     }
-
-    fn add_coordinate(&mut self, item: Coordinate) {
-        self.components.push(item);
+}
+impl Ord for CoordinatDistance {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Use f64::total_cmp to create a total ordering
+        // Note: This makes it a max-heap by default
+        self.distance.total_cmp(&other.distance)
+    }
+}
+impl PartialOrd for CoordinatDistance {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 
-fn find_min_pair(
-    distances: &mut HashMap<(Coordinate, Coordinate), f64>,
-) -> Option<(Coordinate, Coordinate)> {
-    let min_pair = distances
-        .iter()
-        .min_by(|a, b| {
-            // Compare the f64 values (b.1 and a.1).
-            // f64 doesn't implement the Ord trait required by cmp(), so we use partial_cmp().
-            // We must handle the Option returned by partial_cmp(), using unwrap() if we're sure
-            // the values are not NaN, or by providing a default Ordering.
-            a.1.total_cmp(b.1)
-        })
-        .map(|(k, _v)| *k);
-    min_pair
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct CoordinateCircuit {
+    coordinate: Coordinate,
+    circuit_id: Option<Uuid>,
+}
+impl fmt::Display for CoordinateCircuit {
+    // This trait requires the `fmt` method with this exact signature
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Use the write! macro to write the formatted output into the Formatter
+        write!(
+            f,
+            "{}:{},{},{}",
+            self.circuit_id.unwrap_or(Uuid::nil()),
+            self.coordinate.x,
+            self.coordinate.y,
+            self.coordinate.z
+        )
+    }
 }
 
-fn process_circuits(
-    distances: &mut HashMap<(Coordinate, Coordinate), f64>,
-) -> HashMap<Coordinate, Circuit> {
-    let mut circuits: HashMap<Coordinate, Circuit> = HashMap::new();
+fn create_first_ten_connections(
+    distances: &mut BinaryHeap<Reverse<CoordinatDistance>>,
+) -> HashSet<CoordinateCircuit> {
+    let mut circuits: HashMap<Coordinate, CoordinateCircuit> = HashMap::new();
+    let mut iteration = 0;
+    while !distances.is_empty() && iteration < 1000 {
+        if let Some(current) = distances.pop() {
+            let coord_a = current.0.coord_a;
+            let coord_b = current.0.coord_b;
 
-    let mut connections_made = 0;
-    while connections_made < 10 {
-        println!("--- Connections Made: {} ---", connections_made);
-        // 1. Find the min pair (this part was fine)
-        let min_pair = find_min_pair(distances);
-
-        // Use 'if let' for cleaner handling of the Option returned by map
-        if let Some((c1, c2)) = min_pair {
-            // --- Borrowing Logic Start ---
-
-            // We can't use `get_mut` multiple times safely in the same scope,
-            // especially not if we plan to insert things.
-            // We handle all four cases using the Entry API effectively.
-
-            // Check if both exist first to match original logic intent
-            if circuits.contains_key(&c1) && circuits.contains_key(&c2) {
-                println!("Both coordinates are already in circuits.");
-            } else if let Some(c1_circ) = circuits.get_mut(&c1) {
-                // Case 2: C1 exists, C2 does not.
-                println!("C1 exists, adding C2 to its circuit and linking C2's key.");
-                c1_circ.add_coordinate(c2);
-
-                // CRITICAL FIX: We need to clone the circuit object to insert it under the new key `c2`.
-                // Otherwise, we try to put the same *instance* of Circuit in the HashMap twice (by value).
-                let new_c2_circuit = c1_circ.clone();
-                circuits.insert(c2, new_c2_circuit);
-                connections_made += 1;
-            } else if let Some(c2_circ) = circuits.get_mut(&c2) {
-                // Case 3: C2 exists, C1 does not.
-                println!("C2 exists, adding C1 to its circuit and linking C1's key.");
-                c2_circ.add_coordinate(c1);
-
-                // CRITICAL FIX: Clone the circuit object to insert it under the new key `c1`.
-                let new_c1_circuit = c2_circ.clone();
-                circuits.insert(c1, new_c1_circuit);
-                connections_made += 1;
+            if circuits.contains_key(&coord_a) && circuits.contains_key(&coord_b) {
+                iteration += 1;
+                // Both coordinates are already in circuits, skip
+                let a_circuit = circuits.get(&coord_a).unwrap().clone();
+                let b_circuit = circuits.get(&coord_b).unwrap().clone();
+                if a_circuit.circuit_id != b_circuit.circuit_id {
+                    // merge circuits
+                    for entry in circuits.values_mut() {
+                        if entry.circuit_id == a_circuit.circuit_id {
+                            entry.circuit_id = b_circuit.circuit_id.clone();
+                        }
+                    }
+                } else {
+                    continue;
+                }
+            } else if circuits.contains_key(&coord_a) && !circuits.contains_key(&coord_b) {
+                // coord_a is already in a circuit, add coord_b to that circuit
+                let existing_circuit = circuits.get(&coord_a).unwrap();
+                let new_circuit = CoordinateCircuit {
+                    coordinate: coord_b,
+                    circuit_id: existing_circuit.circuit_id,
+                };
+                circuits.insert(new_circuit.coordinate, new_circuit);
+                iteration += 1;
+            } else if circuits.contains_key(&coord_b) && !circuits.contains_key(&coord_a) {
+                // coord_b is already in a circuit, add coord_a to that circuit
+                let existing_circuit = circuits.get(&coord_b).unwrap();
+                let new_circuit = CoordinateCircuit {
+                    coordinate: coord_a,
+                    circuit_id: existing_circuit.circuit_id,
+                };
+                circuits.insert(new_circuit.coordinate, new_circuit);
+                iteration += 1;
             } else {
-                // Case 4: Neither exists.
-                println!("Neither exists, creating new circuits.");
-                let new_circuit = Circuit::new(vec![c1, c2]);
-                let cloned_circuit = new_circuit.clone();
-
-                // Insert both keys referencing the *same* new circuit data (via clone)
-                circuits.insert(c1, cloned_circuit);
-                circuits.insert(c2, new_circuit);
-                connections_made += 1;
+                let new_circuit_id = Uuid::new_v4();
+                let circuit_a = CoordinateCircuit {
+                    coordinate: coord_a,
+                    circuit_id: Some(new_circuit_id),
+                };
+                let circuit_b = CoordinateCircuit {
+                    coordinate: coord_b,
+                    circuit_id: Some(new_circuit_id),
+                };
+                circuits.insert(circuit_a.coordinate, circuit_a);
+                circuits.insert(circuit_b.coordinate, circuit_b);
+                iteration += 1;
             }
-
-            // --- Borrowing Logic End ---
-
-            // This line was fine, assuming distances is mutable
-            distances.remove(&(c1, c2));
-            distances.remove(&(c2, c1));
-        } else {
-            println!("No pairs found in distances map.");
-            break;
         }
     }
-    circuits
+
+    circuits.values().cloned().collect()
 }
 
-fn compute_distances(grid: &Vec<Coordinate>) -> HashMap<(Coordinate, Coordinate), f64> {
-    let mut distances: HashMap<(Coordinate, Coordinate), f64> = HashMap::new();
-    for coord in grid {
-        for coord2 in grid {
+fn compute_distances(grid: &HashSet<Coordinate>) -> BinaryHeap<Reverse<CoordinatDistance>> {
+    let mut distances: BinaryHeap<Reverse<CoordinatDistance>> = BinaryHeap::new();
+    let mut seen_pairs: HashSet<(Coordinate, Coordinate)> = HashSet::new();
+    for coord in grid.clone() {
+        for coord2 in grid.clone() {
             if coord != coord2 {
-                let x_squared = (coord.x - coord2.x).pow(2) as f64;
-                let y_squared = (coord.y - coord2.y).pow(2) as f64;
-                let z_squared = (coord.z - coord2.z).pow(2) as f64;
+                let x_comp = coord.x as f64 - coord2.x as f64;
+                let y_comp = coord.y as f64 - coord2.y as f64;
+                let z_comp = coord.z as f64 - coord2.z as f64;
+
+                let x_squared = x_comp * x_comp;
+                let y_squared = y_comp * y_comp;
+                let z_squared = z_comp * z_comp;
 
                 let dist = (x_squared + y_squared + z_squared).sqrt();
-                if !distances.contains_key(&(coord2.clone(), coord.clone())) {
-                    distances.insert((coord.clone(), coord2.clone()), dist);
+                let dist_nan = NotNan::new(dist).unwrap();
+                let coord_dist = CoordinatDistance {
+                    distance: dist_nan,
+                    coord_a: coord,
+                    coord_b: coord2,
+                };
+
+                if !seen_pairs.contains(&(coord, coord2)) && !seen_pairs.contains(&(coord2, coord))
+                {
+                    distances.push(Reverse(coord_dist));
+                    seen_pairs.insert((coord, coord2));
+                    seen_pairs.insert((coord2, coord));
+                } else {
+                    continue;
                 }
             }
         }
@@ -163,18 +196,25 @@ fn compute_distances(grid: &Vec<Coordinate>) -> HashMap<(Coordinate, Coordinate)
 }
 
 fn group_coordinates_by_circuit(
-    circuits: &HashMap<Coordinate, Circuit>,
+    circuits: &HashSet<CoordinateCircuit>,
 ) -> HashMap<Uuid, HashSet<Coordinate>> {
     let mut grouped_map: HashMap<Uuid, HashSet<Coordinate>> = HashMap::new();
 
-    for (_key, item) in circuits {
+    for box_circuit in circuits {
         // Use entry() to check if the ID already exists in the grouped_map.
         // If it does, get the mutable reference to the Vec.
         // If it doesn't, insert a new empty Vec.
-        grouped_map
-            .entry(item.id)
-            .or_insert_with(HashSet::new)
-            .extend(item.components.iter().cloned());
+        if let Some(cicuit_id) = box_circuit.circuit_id {
+            grouped_map
+                .entry(cicuit_id)
+                .or_insert_with(HashSet::new)
+                .insert(box_circuit.coordinate);
+        } else {
+            grouped_map.insert(
+                Uuid::new_v4(),
+                [box_circuit.coordinate].iter().cloned().collect(),
+            );
+        }
     }
 
     println!("Final Grouped Map: {:?}", grouped_map);
@@ -198,32 +238,40 @@ fn pick_top_3_circuits(circuit_vec: &Vec<usize>) -> Vec<usize> {
     top_3
 }
 
-fn calc_top_3_product(top_3: &Vec<usize>) -> usize {
-    top_3.iter().fold(1, |acc, x| acc * x)
+fn calc_top_3_product(top_3: &Vec<usize>) -> u128 {
+    top_3
+        .iter()
+        .fold(1 as u128, |acc, x| (acc as u128) * (*x as u128))
 }
 
 fn solve(input: &str) -> (String, String) {
     let grid = parse_grid(input);
 
-    println!("Parsed grid successfully. {:?}", grid);
+    println!("Parsed grid successfully. ");
 
     let mut distances = compute_distances(&grid);
+    println!("computed distances");
 
-    let circuits = process_circuits(&mut distances);
+    let circuits = create_first_ten_connections(&mut distances);
+    println!("created circuits");
 
     let grouped_map = group_coordinates_by_circuit(&circuits);
+    println!("groupd by circuit");
 
     let circuit_vec = circuits_decending(&grouped_map);
+    println!("ordered decending");
 
     let top_3 = pick_top_3_circuits(&circuit_vec);
+    println!("computed top 3");
 
     let mult_top_three = calc_top_3_product(&top_3);
+    println!("calc product of top 3");
 
     (mult_top_three.to_string(), "null".to_string())
 }
 
 /// Parse input into a 2D grid of characters
-fn parse_grid(input: &str) -> Vec<Coordinate> {
+fn parse_grid(input: &str) -> HashSet<Coordinate> {
     input
         .lines()
         .map(|line| line.trim())
@@ -263,41 +311,166 @@ mod tests {
 984,92,344
 425,690,689";
 
+    static EXPECTED_DISTANCES_LEN: usize = 190;
+
     // Part 1 tests
+
+    #[test]
+    fn test_create_first_ten_connections() {
+        let grid = parse_grid(SAMPLE_INPUT);
+        let distances = compute_distances(&grid);
+        let circuits = create_first_ten_connections(&distances);
+
+        assert!(distances.len() < EXPECTED_DISTANCES_LEN); // Some distances should have been removed
+        assert_eq!(circuits.len(), 13); // Each coordinate should map to a circuit
+
+        for coord in &circuits {
+            println!("{}", coord);
+            assert!(coord.circuit_id.is_some()); // All circuits should have an ID
+        }
+        let grouped_by_circuit = group_coordinates_by_circuit(&circuits);
+        let mut counts_per_circuit: Vec<usize> = grouped_by_circuit
+            .iter()
+            .map(|(_id, coords)| coords.len())
+            .collect();
+        counts_per_circuit.sort();
+        counts_per_circuit.reverse();
+        println!("Counts per circuit: {:?}", counts_per_circuit);
+
+        let boxes_in_circuits: HashSet<Coordinate> = grouped_by_circuit
+            .values()
+            .flat_map(|s| s.iter())
+            .map(|x| *x)
+            .into_iter()
+            .collect();
+        assert_eq!(
+            circuits
+                .iter()
+                .map(|x| &x.coordinate)
+                .collect::<HashSet<_>>(),
+            boxes_in_circuits.iter().collect::<HashSet<_>>()
+        ); // All coordinates should be accounted for
+
+        assert_eq!(grouped_by_circuit.keys().len(), 4);
+    }
+
+    #[test]
+    fn test_min_distance_sample() {
+        let grid = parse_grid(SAMPLE_INPUT);
+        let distances = compute_distances(&grid);
+        let mut circuits: HashMap<Coordinate, CoordinateCircuit> = HashMap::new();
+        let first_min = find_min_pair(&distances, circuits.clone());
+
+        let expected_first_min = (
+            Coordinate::new(162, 817, 812),
+            Coordinate::new(425, 690, 689),
+        );
+        assert_eq!(*first_min.0, expected_first_min.0);
+        assert_eq!(&first_min.1.coordinate, &expected_first_min.1);
+        let expected_second_min = (
+            Coordinate::new(162, 817, 812),
+            Coordinate::new(431, 825, 988),
+        );
+        let the_circuit_id = Uuid::new_v4();
+        circuits.insert(
+            expected_first_min.0,
+            CoordinateCircuit {
+                coordinate: expected_first_min.0,
+                circuit_id: Some(the_circuit_id),
+            },
+        );
+        circuits.insert(
+            expected_first_min.1,
+            CoordinateCircuit {
+                coordinate: expected_first_min.1,
+                circuit_id: Some(the_circuit_id),
+            },
+        );
+        let second_min: (&Coordinate, &CoordinatDistance) =
+            find_min_pair(&distances, circuits.clone());
+        assert_eq!(*second_min.0, expected_second_min.0);
+        assert_eq!(&second_min.1.coordinate, &expected_second_min.1);
+
+        circuits.insert(
+            expected_second_min.0,
+            CoordinateCircuit {
+                coordinate: expected_second_min.0,
+                circuit_id: Some(the_circuit_id),
+            },
+        );
+
+        circuits.insert(
+            expected_second_min.1,
+            CoordinateCircuit {
+                coordinate: expected_second_min.1,
+                circuit_id: Some(the_circuit_id),
+            },
+        );
+        let expected_third_min = (
+            Coordinate::new(906, 360, 560),
+            Coordinate::new(805, 96, 715),
+        );
+        let third_min = find_min_pair(&distances, circuits.clone());
+        assert_eq!(*third_min.0, expected_third_min.0);
+        assert_eq!(&third_min.1.coordinate, &expected_third_min.1);
+    }
 
     #[test]
     fn test_compute_distances() {
         let grid = parse_grid(SAMPLE_INPUT);
         let distances = compute_distances(&grid);
-        for ((cord1, cord2), dist) in &distances {
-            println!("Distance between {} and {} is {:.0}", cord1, cord2, dist);
+        for (cord1, heap) in &distances {
+            for closest in heap {
+                let cord2 = &closest.0.coordinate;
+                let dist = closest.0.distance;
+                println!("Distance between {} and {} is {:.0}", cord1, cord2, dist);
+            }
         }
-        assert_eq!(distances.len(), 190);
-        let ((first, second), _) = distances.iter().take(1).next().unwrap();
-        let opposite = distances.get(&(*second, *first));
-        assert_eq!(distances.get(&(*second, *first)).is_none(), true);
-        let self_coord = distances.get(&(*first, *first));
+        assert_eq!(distances.len(), EXPECTED_DISTANCES_LEN);
+        let (first, heap) = distances.iter().take(1).next().unwrap();
+
+        let self_coord = heap.iter().find(|f| f.0.coordinate == *first);
         assert_eq!(self_coord.is_none(), true);
+    }
+
+    fn hp(c: Coordinate, d: f64) -> BinaryHeap<Reverse<CoordinatDistance>> {
+        let mut heap = BinaryHeap::new();
+        heap.push(Reverse(CoordinatDistance {
+            coordinate: c,
+            distance: NotNan::new(d).unwrap(),
+        }));
+        heap
     }
 
     #[test]
     fn test_min_distance() {
-        let mut distances: HashMap<(Coordinate, Coordinate), f64> = HashMap::new();
+        let mut distances: HashMap<Coordinate, BinaryHeap<Reverse<CoordinatDistance>>> =
+            HashMap::new();
 
         let c1 = Coordinate::new(0, 0, 0);
         let c2 = Coordinate::new(1, 1, 1);
         let c3 = Coordinate::new(2, 2, 2);
 
-        distances.insert((c1, c2), 1.732);
-        distances.insert((c1, c3), 3.464);
-        distances.insert((c2, c3), 2.732);
+        distances.insert(c1, hp(c2, 1.732));
+        distances.insert(c1, hp(c3, 3.464));
+        distances.insert(c2, hp(c3, 2.732));
 
-        let min_pair = find_min_pair(&mut distances).unwrap();
-        assert_eq!(min_pair, (c1, c2));
+        let mut circuits: HashMap<Coordinate, CoordinateCircuit> = HashMap::new();
+        let min_pair = find_min_pair(&distances, circuits.clone());
+        assert_eq!(*min_pair.0, c1);
+        assert_eq!(min_pair.1.coordinate, c2);
 
-        distances.remove(&(c1, c2));
-        let min_pair = find_min_pair(&mut distances).unwrap();
-        assert_eq!(min_pair, (c2, c3));
+        let the_circuit_id = Uuid::new_v4();
+        circuits.insert(
+            c1,
+            CoordinateCircuit {
+                coordinate: c2,
+                circuit_id: Some(the_circuit_id),
+            },
+        );
+        let min_pair2 = find_min_pair(&distances, circuits.clone());
+        assert_eq!(*min_pair2.0, c2);
+        assert_eq!(min_pair2.1.coordinate, c3);
     }
 
     #[test]
@@ -406,7 +579,10 @@ mod tests {
                 y: 690,
                 z: 689,
             },
-        ];
+        ]
+        .iter()
+        .map(|i| *i)
+        .collect();
 
         assert_eq!(grid, expected);
     }

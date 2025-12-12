@@ -5,3 +5,4 @@ edition.workspace = true
 
 [dependencies]
 uuid = { version = "1.0", features = ["v4", "serde"] } # "serde" feature is for serialization/deserialization
+ordered-float = "2.0"
