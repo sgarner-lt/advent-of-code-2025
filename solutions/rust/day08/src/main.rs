@@ -98,16 +98,18 @@ impl fmt::Display for CoordinateCircuit {
 
 fn create_first_ten_connections(
     distances: &mut BinaryHeap<Reverse<CoordinatDistance>>,
-) -> HashSet<CoordinateCircuit> {
+) -> (HashSet<CoordinateCircuit>, Option<(Coordinate, Coordinate)>) {
     let mut circuits: HashMap<Coordinate, CoordinateCircuit> = HashMap::new();
-    let mut iteration = 0;
-    while !distances.is_empty() && iteration < 1000 {
+    // let mut iteration = 0;
+    let mut last_two: Option<(Coordinate, Coordinate)> = None;
+
+    while !distances.is_empty() {
         if let Some(current) = distances.pop() {
-            let coord_a = current.0.coord_a;
+            let coord_a: Coordinate = current.0.coord_a;
             let coord_b = current.0.coord_b;
 
             if circuits.contains_key(&coord_a) && circuits.contains_key(&coord_b) {
-                iteration += 1;
+                // iteration += 1;
                 // Both coordinates are already in circuits, skip
                 let a_circuit = circuits.get(&coord_a).unwrap().clone();
                 let b_circuit = circuits.get(&coord_b).unwrap().clone();
@@ -129,7 +131,8 @@ fn create_first_ten_connections(
                     circuit_id: existing_circuit.circuit_id,
                 };
                 circuits.insert(new_circuit.coordinate, new_circuit);
-                iteration += 1;
+                // iteration += 1;
+                last_two = Some((coord_a, coord_b));
             } else if circuits.contains_key(&coord_b) && !circuits.contains_key(&coord_a) {
                 // coord_b is already in a circuit, add coord_a to that circuit
                 let existing_circuit = circuits.get(&coord_b).unwrap();
@@ -138,7 +141,8 @@ fn create_first_ten_connections(
                     circuit_id: existing_circuit.circuit_id,
                 };
                 circuits.insert(new_circuit.coordinate, new_circuit);
-                iteration += 1;
+                last_two = Some((coord_a, coord_b));
+                // iteration += 1;
             } else {
                 let new_circuit_id = Uuid::new_v4();
                 let circuit_a = CoordinateCircuit {
@@ -151,12 +155,13 @@ fn create_first_ten_connections(
                 };
                 circuits.insert(circuit_a.coordinate, circuit_a);
                 circuits.insert(circuit_b.coordinate, circuit_b);
-                iteration += 1;
+                last_two = Some((coord_a, coord_b));
+                // iteration += 1;
             }
         }
     }
 
-    circuits.values().cloned().collect()
+    (circuits.values().cloned().collect(), last_two)
 }
 
 fn compute_distances(grid: &HashSet<Coordinate>) -> BinaryHeap<Reverse<CoordinatDistance>> {
@@ -252,7 +257,7 @@ fn solve(input: &str) -> (String, String) {
     let mut distances = compute_distances(&grid);
     println!("computed distances");
 
-    let circuits = create_first_ten_connections(&mut distances);
+    let (circuits, last_two) = create_first_ten_connections(&mut distances);
     println!("created circuits");
 
     let grouped_map = group_coordinates_by_circuit(&circuits);
@@ -267,7 +272,13 @@ fn solve(input: &str) -> (String, String) {
     let mult_top_three = calc_top_3_product(&top_3);
     println!("calc product of top 3");
 
-    (mult_top_three.to_string(), "null".to_string())
+    let mut two_result: u128 = 1;
+    if let Some((second_last, last)) = last_two {
+        two_result = second_last.x as u128;
+        two_result = two_result * (last.x as u128);
+    }
+
+    (mult_top_three.to_string(), two_result.to_string())
 }
 
 /// Parse input into a 2D grid of characters
