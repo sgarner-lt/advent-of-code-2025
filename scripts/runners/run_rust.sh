@@ -146,9 +146,10 @@ fi
 
 log_info "Running Rust integration test for $DAY_FORMATTED with input: $INPUT_PATH" >&2
 
+RUST_BACKTRACE=1
 # Run cargo and capture output (pipe input file to stdin)
 set +e
-OUTPUT=$(cat "$INPUT_PATH" | cargo run --quiet 2>&1)
+OUTPUT=$(cat "$INPUT_PATH" | cargo run 2>&1)
 EXIT_CODE=$?
 set -e
 
