@@ -148,8 +148,10 @@ log_info "Running Rust integration test for $DAY_FORMATTED with input: $INPUT_PA
 
 RUST_BACKTRACE=1
 # Run cargo and capture output (pipe input file to stdin)
+# --quiet to suppress cargo build output
+# --release for optimized build
 set +e
-OUTPUT=$(cat "$INPUT_PATH" | cargo run 2>&1)
+OUTPUT=$(cat "$INPUT_PATH" | cargo run --release 2>&1)
 EXIT_CODE=$?
 set -e
 

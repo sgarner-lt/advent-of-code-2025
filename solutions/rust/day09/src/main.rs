@@ -1,3 +1,4 @@
+use array2d::Array2D;
 use std::collections::BinaryHeap;
 use std::collections::HashSet;
 use std::fmt;
@@ -26,25 +27,136 @@ fn main() {
     io::stdin()
         .read_to_string(&mut input)
         .expect("Failed to read from stdin");
-    let grid = parse_grid(&input);
-    let mut eval = BinaryHeap::new();
-    for p1 in &grid {
-        for p2 in &grid {
-            if p1 != p2 {
-                let area = ((p1.x - p2.x).abs() + 1) * ((p1.y - p2.y).abs() + 1);
-                eval.push(area);
-                println!("Comparing Point {} and Point {}: area={}", p1, p2, area);
-            }
-        }
-    }
+    let points = parse_points(&input);
+    // let part1 = part1(&points);
+    let part1 = 0;
+    let part2: i64 = part2(&points);
+
     println!(
         "{{\"part1\": {}, \"part2\": {}}}",
-        eval.peek().unwrap().to_string(),
-        "null".to_string()
+        part1.to_string(),
+        part2.to_string()
     );
 }
 
-fn parse_grid(input: &str) -> HashSet<Point> {
+fn contains_all_red_green_tiles(grid: &Array2D<char>, p1: &Point, p2: &Point) -> bool {
+    let x_start = p1.x.min(p2.x);
+    let y_start = p1.y.min(p2.y);
+    let x_end = p1.x.max(p2.x);
+    let y_end = p1.y.max(p2.y);
+
+    for y in y_start..=y_end {
+        let y_index = y as usize;
+        for x in x_start..=x_end {
+            let grid_char = grid[(y_index, x as usize)];
+            let is_red_green_tile = grid_char == 'X' || grid_char == '#' || grid_char == 'I';
+            if !is_red_green_tile {
+                return false;
+            }
+        }
+    }
+    true
+}
+
+fn part2(points: &HashSet<Point>) -> i64 {
+    let max_x = points.iter().map(|p| p.x).max().unwrap() + 2;
+    let max_y = points.iter().map(|p| p.y).max().unwrap() + 1;
+
+    let mut grid = Array2D::filled_with('.', max_y as usize, max_x as usize);
+    // draw lines between points (green tiles)
+    for p1 in points {
+        for p2 in points {
+            if p1 != p2 {
+                let x_dif = (p1.x - p2.x).abs();
+                let y_dif = (p1.y - p2.y).abs();
+                if p1.x == p2.x {
+                    let base_x = p1.x as usize;
+                    for y in 0..=y_dif {
+                        grid[(p1.y.min(p2.y) as usize + y as usize, base_x)] = 'X';
+                    }
+                }
+                if p1.y == p2.y {
+                    let base_y = p1.y as usize;
+                    for x in 0..=x_dif {
+                        grid[(base_y, p1.x.min(p2.x) as usize + x as usize)] = 'X';
+                    }
+                }
+            }
+        }
+    }
+
+    // plot points (red tiles)
+    for y in 0..=grid.num_rows() - 1 {
+        let y_index = y as i64;
+        for x in 0..=grid.num_columns() - 1 {
+            if points.contains(&Point::new(x as i64, y_index)) {
+                grid[(y, x)] = '#';
+            }
+        }
+    }
+
+    // fill interior with I (aka green tiles)
+    for y in 0..=grid.num_rows() - 1 {
+        let mut min_x_red_green_tile = None;
+        let mut max_x_red_green_tile = None;
+        for x in 0..=grid.num_columns() - 1 {
+            let grid_char = grid[(y, x)];
+            let mut is_red_green_tile = grid_char == 'X' || grid_char == '#';
+            if is_red_green_tile && min_x_red_green_tile.is_none() {
+                min_x_red_green_tile = Some(x);
+            } else if is_red_green_tile {
+                max_x_red_green_tile = Some(x);
+            }
+        }
+        if let (Some(min_x), Some(max_x)) = (min_x_red_green_tile, max_x_red_green_tile) {
+            for x in 0..=grid.num_columns() - 1 {
+                let grid_char = grid[(y, x)];
+                let mut is_red_green_tile = grid_char == 'X' || grid_char == '#';
+                if !is_red_green_tile && x > min_x && x < max_x {
+                    grid[(y, x)] = 'I';
+                }
+            }
+        }
+    }
+
+    // print grid
+    // for y in 0..=grid.num_rows() - 1 {
+    //     for x in 0..=grid.num_columns() - 1 {
+    //         print!("{}", grid[(y, x)]);
+    //     }
+    //     println!();
+    // }
+
+    let mut max_area: i64 = 0;
+    for p1 in points {
+        for p2 in points {
+            if p1 != p2 {
+                if contains_all_red_green_tiles(&grid, p1, p2) {
+                    let area = ((p1.x - p2.x).abs() + 1) * ((p1.y - p2.y).abs() + 1);
+                    max_area = max_area.max(area);
+                }
+                // println!("Comparing Point {} and Point {}: area={}", p1, p2, area);
+            }
+        }
+    }
+    max_area
+}
+
+fn part1(points: &HashSet<Point>) -> i64 {
+    let mut eval = BinaryHeap::new();
+    for p1 in points {
+        for p2 in points {
+            if p1 != p2 {
+                let area = ((p1.x - p2.x).abs() + 1) * ((p1.y - p2.y).abs() + 1);
+                eval.push(area);
+                // println!("Comparing Point {} and Point {}: area={}", p1, p2, area);
+            }
+        }
+    }
+    eval.peek().unwrap().to_owned()
+}
+
+fn parse_points(input: &str) -> HashSet<Point> {
     input
         .lines()
         .map(|line| line.trim())
@@ -58,17 +170,3 @@ fn parse_grid(input: &str) -> HashSet<Point> {
         })
         .collect()
 }
-
-// fn read_input(path: &str) -> String {
-//     fs::read_to_string(path).expect("Failed to read input file")
-// }
-
-// fn part1(input: &str) -> i32 {
-//     // TODO: Implement Part 1 solution
-//     0
-// }
-
-// fn part2(input: &str) -> i32 {
-//     // TODO: Implement Part 2 solution
-//     0
-// }
