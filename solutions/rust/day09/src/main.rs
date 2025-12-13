@@ -1,16 +1,15 @@
 use array2d::Array2D;
-use std::collections::BinaryHeap;
 use std::collections::HashSet;
 use std::fmt;
 use std::io::{self, Read};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 struct Point {
-    x: i64,
-    y: i64,
+    x: i32,
+    y: i32,
 }
 impl Point {
-    fn new(x: i64, y: i64) -> Self {
+    fn new(x: i32, y: i32) -> Self {
         Point { x, y }
     }
 }
@@ -29,7 +28,7 @@ fn main() {
         .expect("Failed to read from stdin");
     let points = parse_points(&input);
     // let part1 = part1(&points);
-    let part1 = 0;
+    let part1: i32 = 0;
     let part2: i64 = part2(&points);
 
     println!(
@@ -58,14 +57,20 @@ fn contains_all_red_green_tiles(grid: &Array2D<char>, p1: &Point, p2: &Point) ->
     true
 }
 
-fn part2(points: &HashSet<Point>) -> i64 {
-    let max_x = points.iter().map(|p| p.x).max().unwrap() + 2;
-    let max_y = points.iter().map(|p| p.y).max().unwrap() + 1;
+fn part2(un_normalized_points: &HashSet<Point>) -> i64 {
+    let min_point_x = un_normalized_points.iter().map(|p| p.x).min().unwrap();
+    let min_point_y = un_normalized_points.iter().map(|p| p.y).min().unwrap();
+    let points: HashSet<Point> = un_normalized_points
+        .iter()
+        .map(|p| Point::new(p.x - min_point_x, p.y - min_point_y))
+        .collect();
+    let grid_max_x_columns = points.iter().map(|p| p.x).max().unwrap() + 2;
+    let grid_max_y_rows = points.iter().map(|p| p.y).max().unwrap() + 1;
 
-    let mut grid = Array2D::filled_with('.', max_y as usize, max_x as usize);
+    let mut grid = Array2D::filled_with('.', grid_max_y_rows as usize, grid_max_x_columns as usize);
     // draw lines between points (green tiles)
-    for p1 in points {
-        for p2 in points {
+    for p1 in &points {
+        for p2 in &points {
             if p1 != p2 {
                 let x_dif = (p1.x - p2.x).abs();
                 let y_dif = (p1.y - p2.y).abs();
@@ -87,9 +92,9 @@ fn part2(points: &HashSet<Point>) -> i64 {
 
     // plot points (red tiles)
     for y in 0..=grid.num_rows() - 1 {
-        let y_index = y as i64;
+        let y_index = y as i32;
         for x in 0..=grid.num_columns() - 1 {
-            if points.contains(&Point::new(x as i64, y_index)) {
+            if points.contains(&Point::new(x as i32, y_index)) {
                 grid[(y, x)] = '#';
             }
         }
@@ -101,7 +106,7 @@ fn part2(points: &HashSet<Point>) -> i64 {
         let mut max_x_red_green_tile = None;
         for x in 0..=grid.num_columns() - 1 {
             let grid_char = grid[(y, x)];
-            let mut is_red_green_tile = grid_char == 'X' || grid_char == '#';
+            let is_red_green_tile = grid_char == 'X' || grid_char == '#';
             if is_red_green_tile && min_x_red_green_tile.is_none() {
                 min_x_red_green_tile = Some(x);
             } else if is_red_green_tile {
@@ -111,7 +116,7 @@ fn part2(points: &HashSet<Point>) -> i64 {
         if let (Some(min_x), Some(max_x)) = (min_x_red_green_tile, max_x_red_green_tile) {
             for x in 0..=grid.num_columns() - 1 {
                 let grid_char = grid[(y, x)];
-                let mut is_red_green_tile = grid_char == 'X' || grid_char == '#';
+                let is_red_green_tile = grid_char == 'X' || grid_char == '#';
                 if !is_red_green_tile && x > min_x && x < max_x {
                     grid[(y, x)] = 'I';
                 }
@@ -128,11 +133,15 @@ fn part2(points: &HashSet<Point>) -> i64 {
     // }
 
     let mut max_area: i64 = 0;
-    for p1 in points {
-        for p2 in points {
+    for p1 in &points {
+        let p1x = p1.x as i64;
+        let p1y = p1.y as i64;
+        for p2 in &points {
             if p1 != p2 {
-                if contains_all_red_green_tiles(&grid, p1, p2) {
-                    let area = ((p1.x - p2.x).abs() + 1) * ((p1.y - p2.y).abs() + 1);
+                let p2x = p2.x as i64;
+                let p2y = p2.y as i64;
+                if contains_all_red_green_tiles(&grid, &p1, &p2) {
+                    let area = ((p1x - p2x).abs() + 1) * ((p1y - p2y).abs() + 1);
                     max_area = max_area.max(area);
                 }
                 // println!("Comparing Point {} and Point {}: area={}", p1, p2, area);
@@ -143,17 +152,21 @@ fn part2(points: &HashSet<Point>) -> i64 {
 }
 
 fn part1(points: &HashSet<Point>) -> i64 {
-    let mut eval = BinaryHeap::new();
+    let mut max_area: i64 = 0;
     for p1 in points {
+        let p1x = p1.x as i64;
+        let p1y = p1.y as i64;
         for p2 in points {
             if p1 != p2 {
-                let area = ((p1.x - p2.x).abs() + 1) * ((p1.y - p2.y).abs() + 1);
-                eval.push(area);
+                let p2x = p2.x as i64;
+                let p2y = p2.y as i64;
+                let area = ((p1x - p2x).abs() + 1) * ((p1y - p2y).abs() + 1);
+                max_area = max_area.max(area);
                 // println!("Comparing Point {} and Point {}: area={}", p1, p2, area);
             }
         }
     }
-    eval.peek().unwrap().to_owned()
+    max_area
 }
 
 fn parse_points(input: &str) -> HashSet<Point> {
@@ -162,9 +175,9 @@ fn parse_points(input: &str) -> HashSet<Point> {
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
         .map(|line| {
-            let coords: Vec<i64> = line
+            let coords: Vec<i32> = line
                 .split(",")
-                .map(|s| s.parse::<i64>().expect("Failed to parse integer"))
+                .map(|s| s.parse::<i32>().expect("Failed to parse integer"))
                 .collect();
             Point::new(coords[0], coords[1])
         })
