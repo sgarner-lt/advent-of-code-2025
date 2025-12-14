@@ -146,7 +146,6 @@ fi
 
 log_info "Running Rust integration test for $DAY_FORMATTED with input: $INPUT_PATH" >&2
 
-RUST_BACKTRACE=1
 # Run cargo and capture output (pipe input file to stdin)
 # --quiet to suppress cargo build output
 # --release for optimized build
