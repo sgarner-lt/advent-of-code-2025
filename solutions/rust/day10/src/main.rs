@@ -1,6 +1,8 @@
+use rayon::prelude::*;
 use std::fmt;
 use std::io::{self, Read};
 
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
 struct ButtonWiringSchematic {
     data: Vec<usize>,
 }
@@ -44,12 +46,24 @@ impl fmt::Display for JoltageRequirement {
     }
 }
 
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
 struct IndicatorLightDiagram {
     data: Vec<bool>,
 }
 impl IndicatorLightDiagram {
-    fn new(data: Vec<bool>) -> Self {
+    fn new(size: usize) -> Self {
+        let data = vec![false; size];
         IndicatorLightDiagram { data }
+    }
+
+    fn apply_button_schema(&self, _schema: &ButtonWiringSchematic) -> IndicatorLightDiagram {
+        // Placeholder implementation
+        let mut new_data = self.data.clone();
+        for &index in &_schema.data {
+            new_data[index] = !new_data[index];
+        }
+
+        IndicatorLightDiagram { data: new_data }
     }
 }
 impl fmt::Display for IndicatorLightDiagram {
@@ -117,23 +131,115 @@ impl fmt::Display for Problem {
     }
 }
 
-enum SearchNode<'a> {
+use std::rc::Rc;
+
+enum SearchNode {
     Start {
         initial_state: IndicatorLightDiagram,
     },
     Intermediate {
-        parent: &'a SearchNode<'a>,
-        button_schema: &'a ButtonWiringSchematic,
+        parent: Rc<SearchNode>,
+        button_schema: ButtonWiringSchematic,
         current_state: IndicatorLightDiagram,
     },
     Goal {
-        parent: &'a SearchNode<'a>,
-        final_state: IndicatorLightDiagram,
+        parent: Rc<SearchNode>,
     },
 }
 
+fn next_steps(_current_node: &Rc<SearchNode>, _machine: &Machine) -> Vec<Rc<SearchNode>> {
+    match _current_node.as_ref() {
+        SearchNode::Start { initial_state } => {
+            let mut next_nodes: Vec<Rc<SearchNode>> = vec![];
+            for schema in &_machine.button_wiring_schemas {
+                // Apply schema to initial_state to get new_state
+                let new_state = initial_state.apply_button_schema(schema);
+                if new_state == _machine.indicator_light_diag {
+                    next_nodes.push(Rc::new(SearchNode::Goal {
+                        parent: Rc::clone(_current_node),
+                    }));
+                } else {
+                    next_nodes.push(Rc::new(SearchNode::Intermediate {
+                        parent: Rc::clone(_current_node),
+                        button_schema: schema.clone(),
+                        current_state: new_state,
+                    }));
+                }
+            }
+            next_nodes
+        }
+        SearchNode::Intermediate {
+            parent: _,
+            button_schema,
+            current_state,
+        } => {
+            let mut next_nodes: Vec<Rc<SearchNode>> = vec![];
+            for schema in &_machine.button_wiring_schemas {
+                if button_schema == schema {
+                    continue; // Avoid repeating the same button press
+                }
+                // Apply schema to current_state to get new_state
+                let new_state = current_state.apply_button_schema(schema);
+                next_nodes.push(Rc::new(SearchNode::Intermediate {
+                    parent: Rc::clone(_current_node),
+                    button_schema: schema.clone(),
+                    current_state: new_state,
+                }));
+            }
+            // Check if current_state meets goal condition
+            // If so, create Goal node (optional here)
+            next_nodes
+        }
+        SearchNode::Goal { .. } => vec![],
+    }
+}
+
+fn breadth_first_search(_machine: &Machine) -> Option<Rc<SearchNode>> {
+    let initial_node = Rc::new(SearchNode::Start {
+        initial_state: IndicatorLightDiagram::new(_machine.indicator_light_diag.data.len()),
+    });
+    let mut frontier: Vec<Rc<SearchNode>> = vec![Rc::clone(&initial_node)];
+    while !frontier.is_empty() {
+        let current_node = frontier.remove(0);
+        match current_node.as_ref() {
+            SearchNode::Goal { .. } => return Some(current_node),
+            _ => {
+                let next_nodes = next_steps(&current_node, _machine);
+                frontier.extend(next_nodes);
+            }
+        }
+    }
+    None
+}
+
 fn solve_part1(_problem: &Problem) -> u32 {
-    0
+    _problem
+        .machines
+        .par_iter()
+        .map(|machine| {
+            if let Some(goal_node) = breadth_first_search(machine) {
+                // Count the number of button presses to reach the goal
+                let mut count = 0;
+                let mut current_node = Some(goal_node);
+                while let Some(node_rc) = current_node {
+                    match node_rc.as_ref() {
+                        SearchNode::Intermediate { parent, .. } => {
+                            count += 1;
+                            current_node = Some(Rc::clone(parent));
+                        }
+                        SearchNode::Goal { parent, .. } => {
+                            count += 1;
+                            current_node = Some(Rc::clone(parent));
+                        }
+                        SearchNode::Start { .. } => break,
+                    }
+                }
+                count
+            } else {
+                0 // No solution found
+            }
+        })
+        .sum()
 }
 
 fn main() {
@@ -172,7 +278,9 @@ fn parse_problem(input: &str) -> Problem {
                     _ => panic!("Unexpected character in indicator light diagram: {}", c),
                 })
                 .collect();
-            let indicator_light_diag = IndicatorLightDiagram::new(ind_light_data);
+            let indicator_light_diag = IndicatorLightDiagram {
+                data: ind_light_data,
+            };
 
             let button_wiring_schemas = raw_elements
                 .iter()
