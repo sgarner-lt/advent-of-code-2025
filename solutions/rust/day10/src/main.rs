@@ -146,24 +146,28 @@ enum SearchNode {
         parent: Rc<SearchNode>,
     },
 }
-
-fn next_steps(_current_node: &Rc<SearchNode>, _machine: &Machine) -> Vec<Rc<SearchNode>> {
+fn next_steps(
+    _current_node: &Rc<SearchNode>,
+    _machine: &Machine,
+) -> Vec<(Rc<SearchNode>, IndicatorLightDiagram)> {
     match _current_node.as_ref() {
         SearchNode::Start { initial_state } => {
-            let mut next_nodes: Vec<Rc<SearchNode>> = vec![];
+            let mut next_nodes: Vec<(Rc<SearchNode>, IndicatorLightDiagram)> = vec![];
             for schema in &_machine.button_wiring_schemas {
                 // Apply schema to initial_state to get new_state
                 let new_state = initial_state.apply_button_schema(schema);
                 if new_state == _machine.indicator_light_diag {
-                    next_nodes.push(Rc::new(SearchNode::Goal {
+                    let node = Rc::new(SearchNode::Goal {
                         parent: Rc::clone(_current_node),
-                    }));
+                    });
+                    next_nodes.push((node, new_state));
                 } else {
-                    next_nodes.push(Rc::new(SearchNode::Intermediate {
+                    let node = Rc::new(SearchNode::Intermediate {
                         parent: Rc::clone(_current_node),
                         button_schema: schema.clone(),
-                        current_state: new_state,
-                    }));
+                        current_state: new_state.clone(),
+                    });
+                    next_nodes.push((node, new_state));
                 }
             }
             next_nodes
@@ -173,21 +177,29 @@ fn next_steps(_current_node: &Rc<SearchNode>, _machine: &Machine) -> Vec<Rc<Sear
             button_schema,
             current_state,
         } => {
-            let mut next_nodes: Vec<Rc<SearchNode>> = vec![];
+            let mut next_nodes: Vec<(Rc<SearchNode>, IndicatorLightDiagram)> = vec![];
             for schema in &_machine.button_wiring_schemas {
                 if button_schema == schema {
                     continue; // Avoid repeating the same button press
                 }
                 // Apply schema to current_state to get new_state
                 let new_state = current_state.apply_button_schema(schema);
-                next_nodes.push(Rc::new(SearchNode::Intermediate {
-                    parent: Rc::clone(_current_node),
-                    button_schema: schema.clone(),
-                    current_state: new_state,
-                }));
+                if new_state == _machine.indicator_light_diag {
+                    let node = Rc::new(SearchNode::Goal {
+                        parent: Rc::clone(_current_node),
+                    });
+                    next_nodes.push((node, new_state));
+                } else {
+                    let node = Rc::new(SearchNode::Intermediate {
+                        parent: Rc::clone(_current_node),
+                        button_schema: schema.clone(),
+                        current_state: new_state.clone(),
+                    });
+                    next_nodes.push((node, new_state));
+                }
             }
             // Check if current_state meets goal condition
-            // If so, create Goal node (optional here)
+            // If so, create Goal node (handled above)
             next_nodes
         }
         SearchNode::Goal { .. } => vec![],
@@ -195,17 +207,35 @@ fn next_steps(_current_node: &Rc<SearchNode>, _machine: &Machine) -> Vec<Rc<Sear
 }
 
 fn breadth_first_search(_machine: &Machine) -> Option<Rc<SearchNode>> {
+    use std::collections::HashSet;
+
+    let initial_state = IndicatorLightDiagram::new(_machine.indicator_light_diag.data.len());
     let initial_node = Rc::new(SearchNode::Start {
-        initial_state: IndicatorLightDiagram::new(_machine.indicator_light_diag.data.len()),
+        initial_state: initial_state.clone(),
     });
-    let mut frontier: Vec<Rc<SearchNode>> = vec![Rc::clone(&initial_node)];
+
+    // frontier contains pairs of (node, state) so we can check visited states cheaply
+    let mut frontier: Vec<(Rc<SearchNode>, IndicatorLightDiagram)> =
+        vec![(Rc::clone(&initial_node), initial_state.clone())];
+    let mut visited: HashSet<IndicatorLightDiagram> = HashSet::new();
+    visited.insert(initial_state);
+
     while !frontier.is_empty() {
-        let current_node = frontier.remove(0);
+        let (current_node, current_state) = frontier.remove(0);
         match current_node.as_ref() {
             SearchNode::Goal { .. } => return Some(current_node),
             _ => {
                 let next_nodes = next_steps(&current_node, _machine);
-                frontier.extend(next_nodes);
+                for (node, state) in next_nodes {
+                    if visited.contains(&state) {
+                        continue;
+                    }
+                    if state == _machine.indicator_light_diag {
+                        return Some(node);
+                    }
+                    visited.insert(state.clone());
+                    frontier.push((node, state));
+                }
             }
         }
     }
