@@ -1,6 +1,4 @@
-use std::collections::HashSet;
 use std::fmt;
-use std::fs;
 use std::io::{self, Read};
 
 struct ButtonWiringSchematic {
@@ -20,7 +18,7 @@ impl fmt::Display for ButtonWiringSchematic {
                 .iter()
                 .map(|x| x.to_string())
                 .collect::<Vec<String>>()
-                .join("")
+                .join(",")
         )
     }
 }
@@ -36,12 +34,12 @@ impl fmt::Display for JoltageRequirement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "[{}]",
+            "{{{}}}",
             self.data
                 .iter()
                 .map(|x| x.to_string())
                 .collect::<Vec<String>>()
-                .join("")
+                .join(",")
         )
     }
 }
@@ -61,7 +59,7 @@ impl fmt::Display for IndicatorLightDiagram {
             "[{}]",
             self.data
                 .iter()
-                .map(|x| if *x { "#" } else { "1" })
+                .map(|x| if *x { "#" } else { "." })
                 .collect::<Vec<&str>>()
                 .join("")
         )
@@ -69,20 +67,20 @@ impl fmt::Display for IndicatorLightDiagram {
 }
 
 struct Machine {
-    indicatorLightDiagram: IndicatorLightDiagram,
-    buttonWiringSchematics: Vec<ButtonWiringSchematic>,
-    joltageRequirements: JoltageRequirement,
+    indicator_light_diag: IndicatorLightDiagram,
+    button_wiring_schemas: Vec<ButtonWiringSchematic>,
+    joltage_reqs: JoltageRequirement,
 }
 impl Machine {
     fn new(
-        indicatorLightDiagram: IndicatorLightDiagram,
-        buttonWiringSchematics: Vec<ButtonWiringSchematic>,
-        joltageRequirements: JoltageRequirement,
+        indicator_light_diag: IndicatorLightDiagram,
+        button_wiring_schemas: Vec<ButtonWiringSchematic>,
+        joltage_reqs: JoltageRequirement,
     ) -> Self {
         Machine {
-            indicatorLightDiagram,
-            buttonWiringSchematics,
-            joltageRequirements,
+            indicator_light_diag,
+            button_wiring_schemas,
+            joltage_reqs,
         }
     }
 }
@@ -91,13 +89,13 @@ impl fmt::Display for Machine {
         write!(
             f,
             "{} {} {}",
-            self.indicatorLightDiagram,
-            self.buttonWiringSchematics
+            self.indicator_light_diag,
+            self.button_wiring_schemas
                 .iter()
                 .map(|x| x.to_string())
                 .collect::<Vec<String>>()
                 .join(" "),
-            self.joltageRequirements
+            self.joltage_reqs
         )
     }
 }
@@ -119,6 +117,25 @@ impl fmt::Display for Problem {
     }
 }
 
+enum SearchNode<'a> {
+    Start {
+        initial_state: IndicatorLightDiagram,
+    },
+    Intermediate {
+        parent: &'a SearchNode<'a>,
+        button_schema: &'a ButtonWiringSchematic,
+        current_state: IndicatorLightDiagram,
+    },
+    Goal {
+        parent: &'a SearchNode<'a>,
+        final_state: IndicatorLightDiagram,
+    },
+}
+
+fn solve_part1(_problem: &Problem) -> u32 {
+    0
+}
+
 fn main() {
     let mut input = String::new();
     io::stdin()
@@ -128,7 +145,7 @@ fn main() {
     // let part1 = part1(&points);
     println!("Parsed Problem:\n{}", problem);
 
-    let part1: i32 = 0;
+    let part1: u32 = solve_part1(&problem);
 
     println!(
         "{{\"part1\": {}, \"part2\": {}}}",
@@ -145,42 +162,44 @@ fn parse_problem(input: &str) -> Problem {
         .filter(|line| !line.is_empty())
         .map(|line| {
             let raw_elements: Vec<&str> = line.split(" ").collect();
-            let ind_light_data: Vec<bool> = raw_elements[0].replace("]", "").replace("]", "")
+            let ind_light_data: Vec<bool> = raw_elements[0]
+                .replace("[", "")
+                .replace("]", "")
                 .chars()
                 .map(|c| match c {
                     '#' => true,
                     '.' => false,
-                    _ => panic!("Unexpected character in indicator light diagram"),
+                    _ => panic!("Unexpected character in indicator light diagram: {}", c),
                 })
                 .collect();
-            let indicator_light_diagram = IndicatorLightDiagram::new(ind_light_data);
+            let indicator_light_diag = IndicatorLightDiagram::new(ind_light_data);
 
-            let button_wiring_schematics = raw_elements.iter().skip(1).filter(|s| s.starts_with("(")).map(|s| {
-                let data: Vec<usize> = s.replace("(", "").replace(")", "").split(",")
-                    .map(|c| c.parse::<usize>().expect("Failed to parse digit"))
-                    .collect();
-                ButtonWiringSchematic::new(data)
-            }).collect();
+            let button_wiring_schemas = raw_elements
+                .iter()
+                .skip(1)
+                .filter(|s| s.starts_with("("))
+                .map(|s| {
+                    let data: Vec<usize> = s
+                        .replace("(", "")
+                        .replace(")", "")
+                        .split(",")
+                        .map(|c| c.parse::<usize>().expect("Failed to parse digit"))
+                        .collect();
+                    ButtonWiringSchematic::new(data)
+                })
+                .collect();
 
-            let joltage_data: Vec<usize> = raw_elements.last().unwrap().replace("{", "").replace("}", "")
+            let joltage_data: Vec<usize> = raw_elements
+                .last()
+                .unwrap()
+                .replace("{", "")
+                .replace("}", "")
                 .split(",")
                 .map(|c| c.parse::<usize>().expect("Failed to parse digit"))
                 .collect();
-            let joltage_requirement = JoltageRequirement::new(joltage_data);
+            let joltage_reqs = JoltageRequirement::new(joltage_data);
 
-
-            let coords: Vec<i32> = line
-                .split(",")
-                .map(|s| s.parse::<i32>().expect("Failed to parse integer"))
-                .collect();
-            Point::new(coords[0], coords[1])
-
-            Machine::new(
-                indicator_light_diagram,
-                button_wiring_schematics,
-                joltage_requirement,
-            )
-
+            Machine::new(indicator_light_diag, button_wiring_schemas, joltage_reqs)
         })
         .collect();
     Problem::new(machines)
