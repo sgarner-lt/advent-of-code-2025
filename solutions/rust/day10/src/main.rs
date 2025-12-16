@@ -547,7 +547,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn real_input_run() {
         let default_input =
             "/Users/sgarner/projects/sgarner-lt/advent-of-code-2025/challenges/day10/input.txt";

@@ -33,12 +33,12 @@ TS=$(date -u +"%Y%m%dT%H%M%SZ")
 echo "=== RUN ${TS} MACHINE_INDEX=${MACHINE_INDEX} PER_MACHINE_TIMEOUT_SECS=${PER_MACHINE_TIMEOUT_SECS} ===" > "$OUT"
 
 # 1) Build + run tests for the day10 crate only (now running from day10 folder)
-echo "=== Building and running tests for day10 only ===" >> "$OUT"
-cargo test -- --nocapture >> "$OUT" 2>&1 || echo "Some day10 tests failed (see output above)." >> "$OUT"
+# echo "=== Building and running tests for day10 only ===" >> "$OUT"
+# cargo test -- --nocapture >> "$OUT" 2>&1 || echo "Some day10 tests failed (see output above)." >> "$OUT"
 
 # 2) Run focused single-machine test for day10
-echo "=== Running focused single-machine test (run_single_machine_from_input) ===" >> "$OUT"
-cargo test run_single_machine_from_input -- --nocapture --test-threads=1 >> "$OUT" 2>&1 || echo "Focused test failed or was filtered; see output above." >> "$OUT"
+echo "=== Running focused single-machine test (real_input_run) ===" >> "$OUT"
+cargo test real_input_run -- --nocapture --test-threads=1 >> "$OUT" 2>&1 || echo "Focused test failed or was filtered; see output above." >> "$OUT"
 
 echo "=== END ${TS} ===" >> "$OUT"
 echo "Appended test output to $OUT"
