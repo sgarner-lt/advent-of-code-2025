@@ -14,7 +14,7 @@ fn main() {
     let input = read_input(input_path);
     let devices = parse_input(&input);
     println!("Parsed Input: {:?}", devices.devices);
-    println!("Part 1: {}", part1(&devices));
+    // println!("Part 1: {}", part1(&devices));
     println!("Part 2: {}", part2(&devices));
 }
 
@@ -51,23 +51,26 @@ fn parse_input(input: &str) -> Devices {
 
 #[derive(Debug, Clone)]
 struct YouPath {
-    visited: Vec<String>,
+    last_item: String,
     is_complete: bool,
+    contains_dac: bool,
+    contains_fft: bool,
 }
 
-fn part1(devices: &Devices) -> i32 {
-    // TODO: Implement Part 1 solution
+fn find_paths(devices: &Devices, source: &str) -> Vec<YouPath> {
     let device_by_label: std::collections::HashMap<String, &Device> = devices
         .devices
         .iter()
         .map(|d| (d.label.clone(), d))
         .collect();
     let _out_devices = devices.devices.iter().filter(|d| d.label == "out");
-    let you_device = device_by_label.get("you").unwrap();
-    let mut you_paths: Vec<YouPath> = Vec::new();
-    you_paths.push(YouPath {
-        visited: vec![you_device.label.clone()],
+    let source_devices = device_by_label.get(source).unwrap();
+    let mut source_paths: Vec<YouPath> = Vec::new();
+    source_paths.push(YouPath {
+        last_item: source.to_string(),
         is_complete: false,
+        contains_dac: false,
+        contains_fft: false,
     });
 
     let mut all_complete = false;
@@ -75,8 +78,8 @@ fn part1(devices: &Devices) -> i32 {
 
     while !all_complete {
         let mut new_paths = Vec::new();
-        for path in you_paths.iter_mut().filter(|p| !p.is_complete) {
-            let current_label = path.visited.last().unwrap();
+        for path in source_paths.iter_mut().filter(|p| !p.is_complete) {
+            let current_label = &path.last_item;
             if current_label == "out" {
                 path.is_complete = true;
                 complete_paths.push(path.clone());
@@ -84,27 +87,33 @@ fn part1(devices: &Devices) -> i32 {
             }
             let current_device = device_by_label.get(current_label).unwrap();
             for output in &current_device.outputs {
-                if !path.visited.contains(output) {
-                    let mut new_path = path.visited.clone();
-                    new_path.push(output.clone());
-                    new_paths.push(YouPath {
-                        visited: new_path,
-                        is_complete: false,
-                    });
-                }
+                new_paths.push(YouPath {
+                    last_item: output.to_string(),
+                    is_complete: false,
+                    contains_dac: path.contains_dac || output == "dac",
+                    contains_fft: path.contains_fft || output == "fft",
+                });
             }
         }
         if new_paths.is_empty() {
             all_complete = true;
         } else {
-            you_paths = new_paths
+            source_paths = new_paths
         }
     }
 
-    complete_paths.iter().count() as i32
+    complete_paths
+}
+
+fn part1(devices: &Devices) -> i32 {
+    let you_paths = find_paths(devices, "you");
+    you_paths.len() as i32
 }
 
 fn part2(devices: &Devices) -> i32 {
-    // TODO: Implement Part 2 solution
-    0
+    let you_paths = find_paths(devices, "svr");
+    you_paths
+        .iter()
+        .filter(|p| p.contains_dac && p.contains_fft)
+        .count() as i32
 }
