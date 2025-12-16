@@ -4,4 +4,9 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-rayon = "1.11"
+ahash = "0.8.12"
+float-ord = "0.3.2"
+chrono = "0.4.42"
+good_lp = { version = "1.14.2", features = ["coin_cbc"], default-features = false}
+coin_cbc = "0.1.8"
+cbc-src = "0.2.8+2.10.12"
