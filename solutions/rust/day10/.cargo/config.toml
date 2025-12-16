@@ -1,0 +1,13 @@
+[build]
+# Add Homebrew lib dirs as native search paths so rustc can find libCbcSolver.
+# Supports both Intel (/usr/local) and Apple Silicon (/opt/homebrew).
+rustflags = [
+  "-Lnative=/usr/local/lib",
+  "-Lnative=/opt/homebrew/lib"
+]
+
+# Export common envs used by native build scripts / pkg-config
+[env]
+PKG_CONFIG_PATH = "/usr/local/lib/pkgconfig:/opt/homebrew/lib/pkgconfig"
+LIBRARY_PATH = "/usr/local/lib:/opt/homebrew/lib"
+DYLD_FALLBACK_LIBRARY_PATH = "/usr/local/lib:/opt/homebrew/lib"
