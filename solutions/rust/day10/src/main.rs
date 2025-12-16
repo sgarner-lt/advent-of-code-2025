@@ -57,11 +57,11 @@ struct IndicatorLightDiagram {
     pub data: Vec<bool>,
 }
 impl IndicatorLightDiagram {
-    fn new(size: usize) -> Self {
-        Self {
-            data: vec![false; size],
-        }
-    }
+    // fn new(size: usize) -> Self {
+    //     Self {
+    //         data: vec![false; size],
+    //     }
+    // }
 }
 impl fmt::Display for IndicatorLightDiagram {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -226,7 +226,7 @@ fn solve_counts_exact(
     time_limit: Option<Duration>,
 ) -> Option<usize> {
     let start = Instant::now();
-    let rows = machine.joltage_reqs.data.len();
+    let _rows = machine.joltage_reqs.data.len();
     let cols = machine.button_wiring_schemas.len();
     let goal: Vec<usize> = machine
         .joltage_reqs
@@ -298,11 +298,11 @@ fn solve_counts_exact(
         for &c in cols_remaining {
             maxcov = maxcov.max(col_rows[c].len());
         }
-        (if maxcov == 0 {
+        if maxcov == 0 {
             sum_rem
         } else {
             (sum_rem + maxcov - 1) / maxcov
-        })
+        }
     }
 
     // recursion
@@ -423,7 +423,7 @@ fn solve_counts_exact(
 }
 
 // ILP solver using good_lp + coin_cbc (good_lp 1.x style)
-fn solve_with_good_lp(machine: &Machine, time_limit_secs: Option<u64>) -> Option<usize> {
+fn solve_with_good_lp(machine: &Machine, _time_limit_secs: Option<u64>) -> Option<usize> {
     // quick feasibility check
     let rows = machine.joltage_reqs.data.len();
     let cols = machine.button_wiring_schemas.len();
@@ -433,6 +433,14 @@ fn solve_with_good_lp(machine: &Machine, time_limit_secs: Option<u64>) -> Option
         .iter()
         .map(|&v| v as i32)
         .collect();
+    // also prepare goal as usize for upper-bound computation
+    let goal_usize: Vec<usize> = machine
+        .joltage_reqs
+        .data
+        .iter()
+        .map(|&v| v as usize)
+        .collect();
+
     for (r, &need) in goal_i32.iter().enumerate() {
         if need > 0 {
             let mut covered = false;
@@ -448,11 +456,38 @@ fn solve_with_good_lp(machine: &Machine, time_limit_secs: Option<u64>) -> Option
         }
     }
 
-    // variables
+    // build per-column rows and conservative per-variable upper bounds (min over covered rows)
+    let mut col_rows: Vec<Vec<usize>> = vec![Vec::new(); cols];
+    for (c, s) in machine.button_wiring_schemas.iter().enumerate() {
+        for &r in &s.data {
+            col_rows[c].push(r);
+        }
+    }
+    let mut ub: Vec<usize> = vec![0; cols];
+    for c in 0..cols {
+        if col_rows[c].is_empty() {
+            ub[c] = 0;
+            continue;
+        }
+        let mut m = usize::MAX;
+        for &r in &col_rows[c] {
+            m = min(m, goal_usize[r]);
+        }
+        ub[c] = if m == usize::MAX { 0 } else { m };
+    }
+
+    // variables with conservative upper bounds to aid the MILP solver
     let mut vars = variables!();
     let mut xs = Vec::with_capacity(cols);
     for j in 0..cols {
-        let v = vars.add(variable().integer().min(0).name(format!("x{}", j)));
+        let max_j = ub[j] as i32; // good_lp accepts i32 for bounds
+        let v = vars.add(
+            variable()
+                .integer()
+                .min(0)
+                .max(max_j)
+                .name(format!("x{}", j)),
+        );
         xs.push(v);
     }
 
@@ -506,7 +541,11 @@ fn solve_with_good_lp(machine: &Machine, time_limit_secs: Option<u64>) -> Option
             }
             Some(total)
         }
-        Err(_) => None,
+        Err(e) => {
+            // Log solver error for diagnostics (helpful in unit tests)
+            eprintln!("ILP solver error / status: {:?}", e);
+            None
+        }
     }
 }
 
@@ -554,11 +593,10 @@ mod tests {
         let input = std::fs::read_to_string(&input_path).expect("failed to read input file");
         let prob = parse_problem(&input);
 
-        // Read per-machine timeout and node-limit from env (seconds / nodes). Tune as needed.
         let timeout_secs: u64 = env::var("PER_MACHINE_TIMEOUT_SECS")
             .ok()
             .and_then(|s| s.parse().ok())
-            .unwrap_or(600); // default 10 minutes
+            .unwrap_or(600);
         let node_limit: usize = env::var("PER_MACHINE_NODE_LIMIT")
             .ok()
             .and_then(|s| s.parse().ok())
@@ -577,7 +615,19 @@ mod tests {
                 m.joltage_reqs.data.len(),
                 m.button_wiring_schemas.len()
             );
-            let res = solve_counts_exact(m, node_limit, Some(Duration::from_secs(timeout_secs)));
+
+            // Try ILP first (with conservative per-variable bounds), fallback to DFS exact search.
+            let ilp_res = solve_with_good_lp(m, Some(timeout_secs));
+            let res = if let Some(d) = ilp_res {
+                println!("machine {}: ILP solution -> {}", i, d);
+                Some(d)
+            } else {
+                // ILP returned None (infeasible / timeout / solver error) — fall back
+                let fallback =
+                    solve_counts_exact(m, node_limit, Some(Duration::from_secs(timeout_secs)));
+                fallback
+            };
+
             match res {
                 Some(d) => {
                     println!("machine {} -> {}", i, d);
