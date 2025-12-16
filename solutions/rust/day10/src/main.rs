@@ -456,12 +456,18 @@ fn solve_with_good_lp(machine: &Machine, time_limit_secs: Option<u64>) -> Option
         xs.push(v);
     }
 
+    // Degenerate: no variables. Return 0 if all goals are zero, otherwise infeasible.
+    if xs.is_empty() {
+        if goal_i32.iter().all(|&g| g == 0) {
+            return Some(0);
+        } else {
+            return None;
+        }
+    }
+
     // objective: minimize sum(x_j)
-    let mut obj = if xs.is_empty() {
-        0.0.into()
-    } else {
-        xs[0].clone()
-    };
+    // start from an affine expression produced from the first variable
+    let mut obj = xs[0].clone().into_expression();
     for v in xs.iter().skip(1) {
         obj = obj + v.clone();
     }
