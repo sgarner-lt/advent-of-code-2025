@@ -1,5 +1,5 @@
 use good_lp::solvers::coin_cbc;
-use good_lp::{IntoAffineExpression, Solution, constraint, variable, variables};
+use good_lp::{IntoAffineExpression, Solution, SolverModel, constraint, variable, variables};
 use std::cmp::min;
 use std::fmt;
 use std::fs;
@@ -491,7 +491,7 @@ fn solve_with_good_lp(machine: &Machine, time_limit_secs: Option<u64>) -> Option
         Ok(sol) => {
             let mut total: usize = 0;
             for j in 0..cols {
-                let val = sol.value(&xs[j]);
+                let val = sol.value(xs[j]);
                 let iv = val.round() as isize;
                 if iv < 0 {
                     return None;
