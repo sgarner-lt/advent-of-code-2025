@@ -13,6 +13,13 @@ fn main() {
     let input = read_input(input_path);
     let problem = parse_problem(&input);
     println!("{:?}", problem);
+    for s in &problem.shapes {
+        let orients = get_all_orientations(s);
+        println!("Shape {} has {} orientations", s.index, orients.len());
+        for o in &orients {
+            println!("  {:?}", o);
+        }
+    }
     println!("Part 1: {}", part1(&problem));
     // println!("Part 2: {}", part2(&problem));
 }
@@ -93,43 +100,40 @@ fn normalize_shape(coords: Vec<(usize, usize)>) -> Vec<(usize, usize)> {
 
 // Rotates coordinates 90 degrees clockwise within a 3x3 boundary and normalizes
 fn rotate_90_clockwise(coords: &[(usize, usize)]) -> Vec<(usize, usize)> {
-    let rotated = coords.iter().map(|&(r, c)| (c, 2 - r)).collect::<Vec<_>>();
+    // Rotate around the bounding box: (r, c) -> (c, max_r - r)
+    let max_r = coords.iter().map(|&(r, _)| r).max().unwrap_or(0);
+    let rotated = coords
+        .iter()
+        .map(|&(r, c)| (c, max_r - r))
+        .collect::<Vec<_>>();
     normalize_shape(rotated)
 }
 
 // Flips coordinates horizontally (mirrors across a vertical axis) and normalizes
 fn flip_horizontal(coords: &[(usize, usize)]) -> Vec<(usize, usize)> {
-    let flipped = coords.iter().map(|&(r, c)| (r, 2 - c)).collect::<Vec<_>>();
+    let max_c = coords.iter().map(|&(_, c)| c).max().unwrap_or(0);
+    let flipped = coords
+        .iter()
+        .map(|&(r, c)| (r, max_c - c))
+        .collect::<Vec<_>>();
     normalize_shape(flipped)
 }
 
-fn get_all_orientations(initial_shape: &Shape) -> Vec<Shape> {
-    let mut unique_orientations = HashSet::new();
-    let mut current_shape_base = initial_shape.coords.to_vec();
+// Return unique normalized orientations (as raw coord Vecs) for a base shape
+fn get_all_orientations(initial_shape: &Shape) -> Vec<Vec<(usize, usize)>> {
+    let mut unique_orientations: HashSet<Vec<(usize, usize)>> = HashSet::new();
 
-    // We generate all rotations for the base orientation and the flipped orientation
-    let orientations_to_process = vec![
-        normalize_shape(current_shape_base.clone()), // Base
-        flip_horizontal(&initial_shape.coords),      // Flipped
-    ];
+    let base = normalize_shape(initial_shape.coords.clone());
+    let flipped = flip_horizontal(&initial_shape.coords);
 
-    for mut shape_variant in orientations_to_process {
+    for mut variant in vec![base, flipped] {
         for _ in 0..4 {
-            // 0, 90, 180, 270 degrees
-            let normalized = normalize_shape(shape_variant.clone());
-            unique_orientations.insert(normalized);
-            shape_variant = rotate_90_clockwise(&shape_variant);
+            unique_orientations.insert(normalize_shape(variant.clone()));
+            variant = rotate_90_clockwise(&variant);
         }
     }
 
-    // Convert HashSet back to a standard Vec for use in the DLX matrix generation
-    unique_orientations
-        .into_iter()
-        .map(|coords| Shape {
-            index: initial_shape.index,
-            coords,
-        })
-        .collect()
+    unique_orientations.into_iter().collect()
 }
 
 fn is_placement_valid(
@@ -148,55 +152,85 @@ fn is_placement_valid(
     true
 }
 
-fn generate_dlx_options(shapes: &Vec<Shape>, region: &Region) -> Vec<Vec<usize>> {
+fn generate_dlx_options(base_shapes: &Vec<Shape>, region: &Region) -> (Vec<Vec<usize>>, usize) {
+    // Returns (options, num_primary_columns)
     let mut options_matrix: Vec<Vec<usize>> = Vec::new();
 
-    let all_unique_orientations: Vec<Vec<(usize, usize)>> =
-        shapes.iter().map(|s| s.coords.clone()).collect();
+    let cell_count = region.width * region.height;
 
-    // Iterate through every shape, every orientation, every top-left grid position (r, c)
-    for shape_orientation in &all_unique_orientations {
-        for r in 0..region.height {
-            for c in 0..region.width {
-                // Check if this specific placement is valid (stays within 50x50 bounds)
-                if is_placement_valid(&shape_orientation, r, c, region) {
-                    let mut current_option: Vec<usize> = Vec::new();
-                    // Convert (r, c) coordinates to a single linear index (0 to 2499 for 50x50)
-                    for (sr, sc) in shape_orientation {
-                        let linear_index = (r + sr) * region.width + (c + sc);
-                        current_option.push(linear_index);
+    // For each shape type, get all unique orientations
+    let all_orients_per_shape: Vec<Vec<Vec<(usize, usize)>>> = base_shapes
+        .iter()
+        .map(|s| get_all_orientations(s))
+        .collect();
+
+    // Count total shape instances
+    let mut total_shape_instances = 0usize;
+    for &count in &region.shape_conts {
+        total_shape_instances += count;
+    }
+
+    // We'll place shape-instance columns first (0..total_shape_instances-1)
+    // and cells after that (offset = total_shape_instances)
+    let cell_offset = total_shape_instances;
+
+    let mut shape_instance_index = 0usize;
+    println!(
+        "total_shape_instances: {} cell_offset: {} cell_count: {}",
+        total_shape_instances, cell_offset, cell_count
+    );
+    for (shape_type_idx, orients) in all_orients_per_shape.iter().enumerate() {
+        let count_for_type = region.shape_conts[shape_type_idx];
+        for _instance in 0..count_for_type {
+            let instance_col = shape_instance_index; // primary column
+            for orient in orients {
+                for r in 0..region.height {
+                    for c in 0..region.width {
+                        if is_placement_valid(orient, r, c, region) {
+                            let mut current_option: Vec<usize> = Vec::new();
+                            // add the shape-instance primary column
+                            current_option.push(instance_col);
+                            // add covered cell secondary columns (offset)
+                            for (sr, sc) in orient {
+                                let linear_index = (r + sr) * region.width + (c + sc);
+                                current_option.push(cell_offset + linear_index);
+                            }
+                            current_option.sort_unstable();
+                            options_matrix.push(current_option);
+                        }
                     }
-                    // Sort indices for canonical representation
-                    current_option.sort_unstable();
-                    options_matrix.push(current_option);
                 }
             }
+            shape_instance_index += 1;
         }
     }
-    // Note: If you use different types of shapes, you also need to ensure the number
-    // of each shape used is exactly correct, usually done via secondary constraints
-    // in the DLX matrix setup. For simple tiling where all shapes are used, the
-    // options only cover the cells.
 
-    options_matrix
+    // Add 'blank' options so that each cell column can be covered once
+    // This allows cells to remain empty (covered by a blank) while preventing overlaps.
+    for linear_index in 0..cell_count {
+        options_matrix.push(vec![cell_offset + linear_index]);
+    }
+
+    (options_matrix, total_shape_instances + cell_count)
 }
 
 use dlx_rs::Solver;
 
-fn solve_tiling_problem(shapes: &Vec<Shape>, region: &Region) -> bool {
-    let options = generate_dlx_options(shapes, region);
+fn solve_tiling_problem(base_shapes: &Vec<Shape>, region: &Region) -> bool {
+    let (options, total_columns) = generate_dlx_options(base_shapes, region);
 
-    let cell_count = region.width * region.height; // For a 50x50 grid
-    let mut s = Solver::new(cell_count);
+    let mut s = Solver::new(total_columns);
 
-    for (index, shape_options) in options.iter().enumerate() {
-        s.add_option(format!("shape_{}", index), &shape_options);
+    println!("Total columns: {}", total_columns);
+    println!("Total options: {}", options.len());
+    if let Some(opt) = options.get(0) {
+        println!("Sample option (first): {:?}", opt);
     }
-    // Add the placement to the solver.
-    // You can use a String or an Enum to identify the option later.
 
-    // To see how many combinations exist:
-    // let total_solutions = s.count();
+    for (index, option) in options.iter().enumerate() {
+        s.add_option(format!("opt_{}", index), &option);
+    }
+
     let solution_exists = s.solve().is_some();
     println!("Solution exists: {}", solution_exists);
     solution_exists
@@ -217,8 +251,7 @@ fn parse_problem(input: &str) -> Problem {
             .take(4)
             .collect::<Vec<_>>();
         let shape = parse_shape(&shape_raw);
-        let orientations = get_all_orientations(&shape);
-        shapes.extend(orientations);
+        shapes.push(shape);
     }
 
     let regions = raw_lines
@@ -230,6 +263,7 @@ fn parse_problem(input: &str) -> Problem {
                 .split('x')
                 .map(|d| d.replace(":", "").parse::<usize>().unwrap())
                 .collect::<Vec<_>>();
+            // Input format may be WxH or HxW; assume first is width then height (as used elsewhere)
             println!("dims: {:?}", dims);
             let shape_conts = parts[1..]
                 .iter()
@@ -272,4 +306,38 @@ fn part1(problem: &Problem) -> i32 {
 fn part2(problem: &Problem) -> i32 {
     // TODO: Implement Part 2 solution
     0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_input_path() -> String {
+        // Match the same sample path used by main (relative to crate dir)
+        format!(
+            "{}/../../../challenges/day12/input-sample.txt",
+            env!("CARGO_MANIFEST_DIR")
+        )
+    }
+
+    #[test]
+    fn region0_is_solvable() {
+        let input = read_input(&sample_input_path());
+        let problem = parse_problem(&input);
+        assert!(solve_tiling_problem(&problem.shapes, &problem.regions[0]));
+    }
+
+    #[test]
+    fn region1_is_solvable() {
+        let input = read_input(&sample_input_path());
+        let problem = parse_problem(&input);
+        assert!(solve_tiling_problem(&problem.shapes, &problem.regions[1]));
+    }
+
+    #[test]
+    fn region2_is_not_solvable() {
+        let input = read_input(&sample_input_path());
+        let problem = parse_problem(&input);
+        assert!(!solve_tiling_problem(&problem.shapes, &problem.regions[2]));
+    }
 }
