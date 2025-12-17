@@ -237,7 +237,20 @@ fn solve_tiling_problem(base_shapes: &Vec<Shape>, region: &Region) -> bool {
     let cell_count = region.width * region.height;
     let total_columns = total_shape_instances + cell_count;
 
-    let mut s = Solver::new(total_columns);
+    // Quick area-based pruning: sum of shape cells must be <= region cells
+    let mut total_shape_cells: usize = 0;
+    for (shape_idx, &count) in region.shape_conts.iter().enumerate() {
+        let per_shape_cells = base_shapes[shape_idx].coords.len();
+        total_shape_cells += per_shape_cells * count;
+    }
+    if total_shape_cells > cell_count {
+        // impossible by area
+        println!(
+            "Pruned by area: need {} cells but region has {}",
+            total_shape_cells, cell_count
+        );
+        return false;
+    }
 
     // Prepare orientations per shape once
     let all_orients_per_shape: Vec<Vec<Vec<(usize, usize)>>> = base_shapes
@@ -245,40 +258,77 @@ fn solve_tiling_problem(base_shapes: &Vec<Shape>, region: &Region) -> bool {
         .map(|s| get_all_orientations(s))
         .collect();
 
+    // Compute number of placements per shape-instance first to allow early rejection
+    let mut placements_per_instance: Vec<usize> = Vec::new();
+    for (shape_type_idx, orients) in all_orients_per_shape.iter().enumerate() {
+        let count_for_type = region.shape_conts[shape_type_idx];
+        for _ in 0..count_for_type {
+            let mut this_instance_count = 0usize;
+            for orient in orients {
+                for r in 0..region.height {
+                    for c in 0..region.width {
+                        if is_placement_valid(orient, r, c, region) {
+                            this_instance_count += 1;
+                        }
+                    }
+                }
+            }
+            placements_per_instance.push(this_instance_count);
+        }
+    }
+
+    // If any shape instance has zero valid placements, region is impossible
+    if let Some(i) = placements_per_instance.iter().position(|&cnt| cnt == 0) {
+        println!("Pruned: shape-instance {} has 0 placements", i);
+        return false;
+    }
+
+    // Order shape-instances by fewest placements first (heuristic to reduce branching)
+    let mut instance_indices: Vec<usize> = (0..placements_per_instance.len()).collect();
+    instance_indices.sort_by_key(|&i| placements_per_instance[i]);
+
+    // Build mapping from logical instance idx -> solver column index
+    let mut instance_to_col: Vec<usize> = vec![0; instance_indices.len()];
+    for (new_col, &inst_idx) in instance_indices.iter().enumerate() {
+        instance_to_col[inst_idx] = new_col;
+    }
+
+    let mut s = Solver::new(total_columns);
+
     let cell_offset = total_shape_instances;
     let mut opt_index: usize = 0;
-    let mut shape_instance_index: usize = 0;
 
+    // Now add options, but using remapped primary columns so the most constrained instances
+    // correspond to the earliest solver columns.
+    let mut logical_instance = 0usize;
     for (shape_type_idx, orients) in all_orients_per_shape.iter().enumerate() {
         let count_for_type = region.shape_conts[shape_type_idx];
         for _instance in 0..count_for_type {
-            let instance_col = shape_instance_index; // primary column index for this shape-instance
+            let logical_col = logical_instance; // logical instance index
+            let solver_col = instance_to_col[logical_col];
             for orient in orients {
                 for r in 0..region.height {
                     for c in 0..region.width {
                         if is_placement_valid(orient, r, c, region) {
                             let mut option: Vec<usize> = Vec::with_capacity(1 + orient.len());
                             // primary column for this shape-instance (1-based for dlx-rs)
-                            option.push(instance_col + 1);
+                            option.push(solver_col + 1);
                             for (sr, sc) in orient {
                                 let linear_index = (r + sr) * region.width + (c + sc);
                                 option.push(cell_offset + linear_index + 1);
                             }
                             option.sort_unstable();
-                            // if opt_index < 8 {
-                            //     println!("adding option {} -> {:?}", opt_index, option);
-                            // }
                             s.add_option(format!("opt_{}", opt_index), &option);
                             opt_index += 1;
                         }
                     }
                 }
             }
-            shape_instance_index += 1;
+            logical_instance += 1;
         }
     }
 
-    // blank options for each cell
+    // blank options for each cell (these use the original cell columns; they don't refer to instances)
     for linear_index in 0..cell_count {
         let option = vec![cell_offset + linear_index + 1];
         s.add_option(format!("blank_{}", linear_index), &option);
@@ -289,7 +339,6 @@ fn solve_tiling_problem(base_shapes: &Vec<Shape>, region: &Region) -> bool {
     println!("Total options added: {}", opt_index);
 
     let solution = s.solve();
-    // println!("Raw solver output: {:?}", solution);
     solution.is_some()
 }
 
