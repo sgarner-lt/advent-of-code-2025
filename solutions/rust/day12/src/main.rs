@@ -1,5 +1,4 @@
 use core::fmt;
-use rayon::prelude::*;
 use std::env;
 use std::fs;
 use std::sync::mpsc::channel;
@@ -232,25 +231,66 @@ fn generate_dlx_options(base_shapes: &Vec<Shape>, region: &Region) -> (Vec<Vec<u
 use dlx_rs::Solver;
 
 fn solve_tiling_problem(base_shapes: &Vec<Shape>, region: &Region) -> bool {
-    let (options, total_columns) = generate_dlx_options(base_shapes, region);
+    // Avoid building the full options matrix in memory. Stream placements directly
+    // into the DLX solver to keep peak memory low.
+    let total_shape_instances: usize = region.shape_conts.iter().sum();
+    let cell_count = region.width * region.height;
+    let total_columns = total_shape_instances + cell_count;
 
     let mut s = Solver::new(total_columns);
 
-    println!("Total columns: {}", total_columns);
-    println!("Total options: {}", options.len());
-    if let Some(opt) = options.get(0) {
-        println!("Sample option (first): {:?}", opt);
+    // Prepare orientations per shape once
+    let all_orients_per_shape: Vec<Vec<Vec<(usize, usize)>>> = base_shapes
+        .iter()
+        .map(|s| get_all_orientations(s))
+        .collect();
+
+    let cell_offset = total_shape_instances;
+    let mut opt_index: usize = 0;
+    let mut shape_instance_index: usize = 0;
+
+    for (shape_type_idx, orients) in all_orients_per_shape.iter().enumerate() {
+        let count_for_type = region.shape_conts[shape_type_idx];
+        for _instance in 0..count_for_type {
+            let instance_col = shape_instance_index; // primary column index for this shape-instance
+            for orient in orients {
+                for r in 0..region.height {
+                    for c in 0..region.width {
+                        if is_placement_valid(orient, r, c, region) {
+                            let mut option: Vec<usize> = Vec::with_capacity(1 + orient.len());
+                            // primary column for this shape-instance (1-based for dlx-rs)
+                            option.push(instance_col + 1);
+                            for (sr, sc) in orient {
+                                let linear_index = (r + sr) * region.width + (c + sc);
+                                option.push(cell_offset + linear_index + 1);
+                            }
+                            option.sort_unstable();
+                            // if opt_index < 8 {
+                            //     println!("adding option {} -> {:?}", opt_index, option);
+                            // }
+                            s.add_option(format!("opt_{}", opt_index), &option);
+                            opt_index += 1;
+                        }
+                    }
+                }
+            }
+            shape_instance_index += 1;
+        }
     }
 
-    for (index, option) in options.iter().enumerate() {
-        s.add_option(format!("opt_{}", index), &option);
+    // blank options for each cell
+    for linear_index in 0..cell_count {
+        let option = vec![cell_offset + linear_index + 1];
+        s.add_option(format!("blank_{}", linear_index), &option);
+        opt_index += 1;
     }
+
+    println!("Total columns: {}", total_columns);
+    println!("Total options added: {}", opt_index);
 
     let solution = s.solve();
     // println!("Raw solver output: {:?}", solution);
-    let solution_exists = solution.is_some();
-    // println!("Solution exists: {}", solution_exists);
-    solution_exists
+    solution.is_some()
 }
 
 fn parse_problem(input: &str) -> Problem {
@@ -281,7 +321,7 @@ fn parse_problem(input: &str) -> Problem {
                 .map(|d| d.replace(":", "").parse::<usize>().unwrap())
                 .collect::<Vec<_>>();
             // Input format may be WxH or HxW; assume first is width then height (as used elsewhere)
-            println!("dims: {:?}", dims);
+            // println!("dims: {:?}", dims);
             let shape_conts = parts[1..]
                 .iter()
                 .map(|&s| s.parse::<usize>().unwrap())
@@ -297,58 +337,60 @@ fn parse_problem(input: &str) -> Problem {
     Problem { shapes, regions }
 }
 
-/*
-
-std::thread::spawn(move || {
-            let res = solve_tiling_problem(&shapes, &region);
-            let _ = tx.send(res);
-        });
-
-        // Wait up to 15 seconds for a solver result; if it times out, consider that a pass.
-        match rx.recv_timeout(Duration::from_secs(15)) {
-
-*/
-
 fn part1(problem: &Problem) -> i32 {
     let shapes = &problem.shapes;
 
-    problem
-        .regions
-        .par_iter()
-        .enumerate()
-        .map(|(index, region)| {
-            println!("Solving for region: {:?}", region);
+    // Controlled parallelism: spawn a small worker pool that uses an Atomic index
+    // to distribute region indices to workers. This avoids cloning Receivers and
+    // bounds memory by limiting concurrent solver instances.
+    let parallelism: usize = std::env::var("REGION_PARALLELISM")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(2);
 
-            let shapes_clone = shapes.clone();
-            let region_clone = region.clone();
-            let (tx, rx) = channel();
-            std::thread::spawn(move || {
-                let res = solve_tiling_problem(&shapes_clone, &region_clone);
-                let _ = tx.send(res);
-            });
-            match rx.recv_timeout(Duration::from_secs(120)) {
-                Ok(found) => {
-                    if found {
-                        println!("Solution found for region: {:?} at index {}", region, index);
-                        1
-                    } else {
-                        println!(
-                            "Solution not found for region: {:?} at index {}",
-                            region, index
-                        );
-                        0
-                    }
+    let region_count = problem.regions.len();
+    let regions = problem.regions.clone();
+    let (res_tx, res_rx) = std::sync::mpsc::channel::<(usize, bool)>();
+    let next_idx = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+
+    for _ in 0..parallelism {
+        let shapes = shapes.clone();
+        let regions = regions.clone();
+        let res_tx = res_tx.clone();
+        let next_idx = next_idx.clone();
+        std::thread::spawn(move || {
+            loop {
+                let i = next_idx.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                if i >= regions.len() {
+                    break;
                 }
-                Err(_) => {
-                    println!(
-                        "region at index {} solver timed out after 15s (treated as no solution)",
-                        index
-                    );
-                    0
+                let region = regions[i].clone();
+                println!("Worker starting region {}", i);
+                let found = solve_tiling_problem(&shapes, &region);
+                let _ = res_tx.send((i, found));
+            }
+        });
+    }
+
+    // Collect results from workers; wait up to 120s per region overall
+    let mut results = vec![false; region_count];
+    for _ in 0..region_count {
+        match res_rx.recv_timeout(Duration::from_secs(30)) {
+            Ok((index, found)) => {
+                results[index] = found;
+                if found {
+                    println!("{} - Solution found ", index);
+                } else {
+                    println!("{} - No solution", index);
                 }
             }
-        })
-        .sum()
+            Err(_) => {
+                println!("Timed out ");
+            }
+        }
+    }
+
+    results.into_iter().map(|b| if b { 1 } else { 0 }).sum()
 }
 
 fn part2(problem: &Problem) -> i32 {
