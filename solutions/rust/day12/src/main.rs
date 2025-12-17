@@ -375,7 +375,7 @@ fn part1(problem: &Problem) -> i32 {
     // Collect results from workers; wait up to 120s per region overall
     let mut results = vec![false; region_count];
     for _ in 0..region_count {
-        match res_rx.recv_timeout(Duration::from_secs(30)) {
+        match res_rx.recv_timeout(Duration::from_secs(60)) {
             Ok((index, found)) => {
                 results[index] = found;
                 if found {
