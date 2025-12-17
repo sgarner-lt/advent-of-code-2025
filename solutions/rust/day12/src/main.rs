@@ -342,7 +342,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn region1_is_solvable() {
         let input = read_input(&sample_input_path());
         let problem = parse_problem(&input);
